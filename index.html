@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video on 3D Object with Three.js</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.161.0/build/three.module.js",
+          "jsm/": "https://cdn.jsdelivr.net/npm/three@0.161.0/examples/jsm/"
+        }
+      }
+  </script>
+</head>
+
+<body>
+  <div id="container"></div>
+  <div id="info">
+    <h1>Video on 3D Object</h1>
+    <div>
+      <button id="playPauseBtn" class="button">Play/Pause</button>
+      <select id="shapeSelect" class="dropdown">
+        <option value="cube">Cube</option>
+        <option value="sphere">Sphere</option>
+        <option value="cylinder">Cylinder</option>
+        <option value="torus">Torus</option>
+      </select>
+      <button id="rotateBtn" class="button">Toggle Rotation</button>
+    </div>
+  </div>
+
+  <script type="module" src="script.js"></script>
+
+  <script>
+
+  </script>
+</body>
+
+</html>
