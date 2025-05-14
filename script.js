@@ -1,25 +1,29 @@
 import { OrbitControls } from "jsm/controls/OrbitControls.js";
 import * as THREE from "three";
 
+const w = window.innerWidth;
+const h = window.innerHeight;
+
 // Initialize Three.js scene
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
 
 // Camera setup
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 5;
+const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
+camera.position.set(0,0,0);
+// camera.position.z = 5;
 
 // Renderer setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setSize(w, h);
 document.body.appendChild(renderer.domElement);
 // document.getElementById('container').appendChild(renderer.domElement);
 
+// Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, -1);  // Point the camera to look forward
 controls.update();
 controls.enableDamping = true;
-controls.dampingFactor = 0.005;
+controls.dampingFactor = 0.05;
 controls.enableZoom = true;
 controls.enablePan = true;
 controls.rotateSpeed = -1;
@@ -45,7 +49,16 @@ const videoMaterial = new THREE.MeshBasicMaterial({
 // Create default shape (cube)
 let currentGeometry = new THREE.BoxGeometry(3, 3, 3);
 let object = new THREE.Mesh(currentGeometry, videoMaterial);
-scene.add(object);
+// scene.add(object);
+
+
+// Create a quadrant
+let quadGeometry = new THREE.SphereGeometry(50, 64, 64, 0, Math.PI, 0, Math.PI/2);
+
+// Create a mesh
+const quadMesh = new THREE.Mesh(quadGeometry, videoMaterial);
+
+scene.add(quadMesh);
 
 
 // Animation loop
