@@ -12,7 +12,8 @@ camera.position.z = 5;
 // Renderer setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
-document.getElementById('container').appendChild(renderer.domElement);
+document.body.appendChild(renderer.domElement);
+// document.getElementById('container').appendChild(renderer.domElement);
 
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, -1);  // Point the camera to look forward
@@ -46,70 +47,12 @@ let currentGeometry = new THREE.BoxGeometry(3, 3, 3);
 let object = new THREE.Mesh(currentGeometry, videoMaterial);
 scene.add(object);
 
-// Animation variables
-let isRotating = false;
-
-// Control functions
-function playPauseVideo() {
-  if (video.paused) {
-    video.play();
-  } else {
-    video.pause();
-  }
-}
-
-function toggleRotation() {
-  isRotating = !isRotating;
-}
-
-function changeShape(shape) {
-  scene.remove(object);
-
-  switch (shape) {
-    case 'cube':
-      currentGeometry = new THREE.BoxGeometry(3, 3, 3);
-      break;
-    case 'sphere':
-      currentGeometry = new THREE.SphereGeometry(2, 32, 32);
-      break;
-    case 'cylinder':
-      currentGeometry = new THREE.CylinderGeometry(1.5, 1.5, 3, 32);
-      break;
-    case 'torus':
-      currentGeometry = new THREE.TorusGeometry(2, 0.5, 16, 100);
-      break;
-    default:
-      currentGeometry = new THREE.BoxGeometry(3, 3, 3);
-  }
-
-  object = new THREE.Mesh(currentGeometry, videoMaterial);
-  scene.add(object);
-}
-
-// Event listeners
-document.getElementById('playPauseBtn').addEventListener('click', playPauseVideo);
-document.getElementById('rotateBtn').addEventListener('click', toggleRotation);
-document.getElementById('shapeSelect').addEventListener('change', function () {
-  changeShape(this.value);
-});
-
-// Handle window resize
-window.addEventListener('resize', function () {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
 
 // Animation loop
 function animate() {
   requestAnimationFrame(animate);
-
-  if (isRotating) {
-    // object.rotation.x += 0.005;
-    object.rotation.y += 0.01;
-  }
-
   renderer.render(scene, camera);
+  controls.update(); // ✅ VERY IMPORTANT
 }
 
 // Start animation
