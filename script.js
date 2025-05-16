@@ -84,12 +84,26 @@ function animate() {
 animate();
 
 // Try to autoplay the video (might be blocked by browser policies)
+let loadedCount = 0;
 
-videos.forEach(myPlay);
+videos.forEach((video) => {
+  video.addEventListener('loadeddata', () => {
+    loadedCount++;
+    if (loadedCount === videos.length) {
+      // All videos are ready
+      videos.forEach(v => {
+        v.currentTime = 0;
+      });
 
-function myPlay(video){
-  video.play().catch(e => {
-    console.log('Video autoplay was prevented:', e);
-    console.log('Please click the Play/Pause button to start the video');
+      // Delay a tiny bit to ensure alignment
+      setTimeout(() => {
+        videos.forEach(v => {
+          v.play().catch(e => {
+            console.log('Video autoplay was prevented:', e);
+          });
+        });
+      }, 100); // small sync buffer
+    }
   });
-}
+});
+
