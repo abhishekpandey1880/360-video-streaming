@@ -15,18 +15,19 @@ camera.position.set(0,0,0);
 // Renderer setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(w, h);
+// renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
 // document.getElementById('container').appendChild(renderer.domElement);
 
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
-controls.target.set(0, 0, 0.1);  // Point the camera to look forward
+controls.target.set(0, 0, 5);  // Point the camera to look forward
 controls.update();
 // controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 controls.enableZoom = true;
 controls.enablePan = true;
-// controls.rotateSpeed = -1;
+controls.rotateSpeed = -1;
 
 const videos = [];
 
@@ -42,8 +43,9 @@ function createQuadrant(vidSrc, phiStart, phiLength, thetaStart, thetaLength){
 
   // Create video texture
   const videoTexture = new THREE.VideoTexture(video);
-  videoTexture.minFilter = THREE.LinearFilter;
-  videoTexture.magFilter = THREE.LinearFilter;
+  videoTexture.minFilter = THREE.NearestFilter;
+  videoTexture.magFilter = THREE.NearestFilter;
+  videoTexture.encoding = THREE.sRGBEncoding; // For quality
 
   // Material with video texture
   const videoMaterial = new THREE.MeshBasicMaterial({
@@ -52,7 +54,7 @@ function createQuadrant(vidSrc, phiStart, phiLength, thetaStart, thetaLength){
   });
 
   // Create a quadrant
-  let quadGeometry = new THREE.SphereGeometry(50, 64, 64, phiStart, phiLength, thetaStart, thetaLength);
+  let quadGeometry = new THREE.SphereGeometry(20, 64, 64, phiStart, phiLength, thetaStart, thetaLength);
 
   // Create a mesh
   const quadMesh = new THREE.Mesh(quadGeometry, videoMaterial);
@@ -61,10 +63,10 @@ function createQuadrant(vidSrc, phiStart, phiLength, thetaStart, thetaLength){
 
 }
 
-const quad1 = createQuadrant("360-videos/flip/2.mp4", -1*(Math.PI/2), Math.PI, 0, Math.PI / 2); // Top Front 
-const quad2 = createQuadrant("360-videos/flip/1.mp4", Math.PI/2, Math.PI, 0, Math.PI / 2); // Top Back
-const quad3 = createQuadrant("360-videos/flip/4.mp4", -1 * (Math.PI / 2), Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Front
-const quad4 = createQuadrant("360-videos/flip/3.mp4", Math.PI/2, Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Back
+const quad1 = createQuadrant("360-videos/roller-coaster/tiles/tl.mp4", -1 * (Math.PI / 2), Math.PI, 0, Math.PI / 2); // Top Front 
+const quad2 = createQuadrant("360-videos/roller-coaster/tiles/tr.mp4", Math.PI / 2, Math.PI, 0, Math.PI / 2); // Top Back
+const quad3 = createQuadrant("360-videos/roller-coaster/tiles/bl.mp4", -1 * (Math.PI / 2), Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Front
+const quad4 = createQuadrant("360-videos/roller-coaster/tiles/br.mp4", Math.PI / 2, Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Back
 
 scene.add(quad1);
 scene.add(quad2);
