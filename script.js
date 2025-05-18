@@ -8,8 +8,8 @@ const h = window.innerHeight;
 const scene = new THREE.Scene();
 
 // Camera setup
-const camera = new THREE.PerspectiveCamera(75, w / h, 0.1, 1000);
-camera.position.set(0,0,0);
+const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
+camera.position.set(0,0,1);
 // camera.position.z = 5;
 
 // Renderer setup
