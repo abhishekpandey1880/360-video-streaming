@@ -126,10 +126,10 @@ setInterval(() => {
 }, 500);
 
 
-const quad1 = createQuadrant("360-videos/roller-coaster/OG-tiles/tl.mp4", -1 * (Math.PI / 2), Math.PI, 0, Math.PI / 2); // Top Front 
-const quad2 = createQuadrant("360-videos/roller-coaster/OG-tiles/tr.mp4", Math.PI / 2, Math.PI, 0, Math.PI / 2); // Top Back
-const quad3 = createQuadrant("360-videos/roller-coaster/OG-tiles/bl.mp4", -1 * (Math.PI / 2), Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Front
-const quad4 = createQuadrant("360-videos/roller-coaster/OG-tiles/br.mp4", Math.PI / 2, Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Back
+const quad1 = createQuadrant("360-videos/roller-coaster/OG-tiles/tl.mp4", -1 * (Math.PI / 2), Math.PI, 0, Math.PI / 2); // Top Left 
+const quad2 = createQuadrant("360-videos/roller-coaster/OG-tiles/tr.mp4", Math.PI / 2, Math.PI, 0, Math.PI / 2); // Top Right
+const quad3 = createQuadrant("360-videos/roller-coaster/OG-tiles/bl.mp4", -1 * (Math.PI / 2), Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Left
+const quad4 = createQuadrant("360-videos/roller-coaster/OG-tiles/br.mp4", Math.PI / 2, Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Right
 
 scene.add(quad1);
 scene.add(quad2);
