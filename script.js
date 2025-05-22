@@ -31,37 +31,66 @@ controls.rotateSpeed = -1;
 
 const videos = [];
 
-function createQuadrant(vidSrc, phiStart, phiLength, thetaStart, thetaLength){
+const pathToVideos = "360-videos/roller-coaster/OG-tiles/";
+const pathToLowVideos = "360-videos/roller-coaster/OG-tiles/low-quality/";
 
-  // Create video element
-  const video = document.createElement('video');
-  videos.push(video);
-  video.src = vidSrc; // Placeholder - replace with actual video URL
-  video.crossOrigin = "anonymous";
-  video.loop = true;
-  video.muted = true; // Muted to allow autoplay
+const sourceMap = {
+  0: { high: pathToVideos + "tl.mp4", low: pathToLowVideos + "tl-low.mp4" },
+  1: { high: pathToVideos + "tr.mp4", low: pathToLowVideos + "tr-low.mp4" },
+  2: { high: pathToVideos + "bl.mp4", low: pathToLowVideos + "bl-low.mp4" },
+  3: { high: pathToVideos + "br.mp4", low: pathToLowVideos + "br-low.mp4" }
+};
 
-  // Create video texture
-  const videoTexture = new THREE.VideoTexture(video);
-  videoTexture.minFilter = THREE.NearestFilter;
-  videoTexture.magFilter = THREE.NearestFilter;
-  videoTexture.encoding = THREE.sRGBEncoding; // For quality
+function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
+  const highVid = document.createElement("video");
+  const lowVid = document.createElement("video");
+  [highVid, lowVid].forEach((v) => {
+    v.crossOrigin = "anonymous";
+    v.loop = true;
+    v.muted = true;
+    videos.push(v);
+  });
 
-  // Material with video texture
+  highVid.src = sourceMap[index].high;
+  lowVid.src = sourceMap[index].low;
+
+  const highTexture = new THREE.VideoTexture(highVid);
+  const lowTexture = new THREE.VideoTexture(lowVid);
+  [highTexture, lowTexture].forEach((tex) => {
+    tex.minFilter = THREE.LinearFilter;
+    tex.magFilter = THREE.LinearFilter;
+    tex.encoding = THREE.sRGBEncoding;
+  });
+
   const videoMaterial = new THREE.MeshBasicMaterial({
-    map: videoTexture,
+    map: lowTexture,
     side: THREE.DoubleSide
   });
 
-  // Create a quadrant
-  let quadGeometry = new THREE.SphereGeometry(20, 64, 64, phiStart, phiLength, thetaStart, thetaLength);
+  const geometry = new THREE.SphereGeometry(20, 64, 64, phiStart, phiLength, thetaStart, thetaLength);
+  const mesh = new THREE.Mesh(geometry, videoMaterial);
 
-  // Create a mesh
-  const quadMesh = new THREE.Mesh(quadGeometry, videoMaterial);
+  mesh.userData.textures = {
+    high: highTexture,
+    low: lowTexture
+  };
+  mesh.userData.videos = {
+    high: highVid,
+    low: lowVid
+  };
 
-  return quadMesh;
-
+  return mesh;
 }
+
+const quads = [
+  createQuadrant(0, -Math.PI / 2, Math.PI, 0, Math.PI / 2), // Top Left
+  createQuadrant(1, Math.PI / 2, Math.PI, 0, Math.PI / 2),  // Top Right
+  createQuadrant(2, -Math.PI / 2, Math.PI, Math.PI / 2, Math.PI / 2), // Bottom Left
+  createQuadrant(3, Math.PI / 2, Math.PI, Math.PI / 2, Math.PI / 2)   // Bottom Right
+];
+
+quads.forEach((q) => scene.add(q));
+
 
 // ABR - 1 Get Camera Direction
 const getCameraDirection = () => {
@@ -95,80 +124,43 @@ function getCurrentQuadrant() {
   return currentIndex; // 0 = quad1, 1 = quad2, ...
 }
 
-// ABR - 4 Video Sources for diffrent quality ( yet to be implemented ) 
-const videoSources = {
-  0: { high: "2_high.mp4", low: "2_low.mp4" },
-  1: { high: "1_high.mp4", low: "1_low.mp4" },
-  2: { high: "4_high.mp4", low: "4_low.mp4" },
-  3: { high: "3_high.mp4", low: "3_low.mp4" },
-};
-
-
-// ABR - 5 Dynamically switch quality based on the viewport
+// ABR - 4 Dynamically switch quality based on the viewport
 let currentQuadrant = -1;
 
 setInterval(() => {
   const newQuadrant = getCurrentQuadrant();
   if (newQuadrant !== currentQuadrant) {
     currentQuadrant = newQuadrant;
-    
-  console.log(currentQuadrant);
-  //   videos.forEach((video, i) => {
-  //     const src = (i === currentQuadrant) ? videoSources[i].high : videoSources[i].low;
-  //     if (video.src !== src) {
-  //       video.pause();
-  //       video.src = src;
-  //       video.load();
-  //       video.play().catch(e => console.log("play error:", e));
-  //     }
-  //   });
+    console.log(currentQuadrant);
+    quads.forEach((q, i) => {
+      q.material.map = q.userData.textures[i === currentQuadrant ? "high" : "low"];
+      q.material.needsUpdate = true;
+    });
   }
 }, 500);
 
 
-const quad1 = createQuadrant("360-videos/roller-coaster/OG-tiles/tl.mp4", -1 * (Math.PI / 2), Math.PI, 0, Math.PI / 2); // Top Left 
-const quad2 = createQuadrant("360-videos/roller-coaster/OG-tiles/tr.mp4", Math.PI / 2, Math.PI, 0, Math.PI / 2); // Top Right
-const quad3 = createQuadrant("360-videos/roller-coaster/OG-tiles/bl.mp4", -1 * (Math.PI / 2), Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Left
-const quad4 = createQuadrant("360-videos/roller-coaster/OG-tiles/br.mp4", Math.PI / 2, Math.PI, Math.PI / 2, Math.PI / 2); // Bottom Right
-
-scene.add(quad1);
-scene.add(quad2);
-scene.add(quad3);
-scene.add(quad4);
-
-
-
-// Animation loop
-function animate() {
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-  controls.update(); // ✅ VERY IMPORTANT
-}
-
-// Start animation
-animate();
-
-// Try to autoplay the video (might be blocked by browser policies)
+// Play all videos once loaded
 let loadedCount = 0;
-
-videos.forEach((video) => {
-  video.addEventListener('loadeddata', () => {
+videos.forEach((v) => {
+  v.addEventListener("loadeddata", () => {
     loadedCount++;
     if (loadedCount === videos.length) {
-      // All videos are ready
-      videos.forEach(v => {
-        v.currentTime = 0;
+      videos.forEach((vid) => {
+        vid.currentTime = 0;
       });
-
-      // Delay a tiny bit to ensure alignment
       setTimeout(() => {
-        videos.forEach(v => {
-          v.play().catch(e => {
-            console.log('Video autoplay was prevented:', e);
-          });
+        videos.forEach((vid) => {
+          vid.play().catch((e) => console.log("Autoplay prevented:", e));
         });
-      }, 100); // small sync buffer
+      }, 100);
     }
   });
 });
 
+function animate() {
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+  controls.update();
+}
+animate();
