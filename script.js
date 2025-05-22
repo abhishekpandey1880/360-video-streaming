@@ -31,14 +31,14 @@ controls.rotateSpeed = -1;
 
 const videos = [];
 
-const pathToVideos = "360-videos/roller-coaster/OG-tiles/";
-const pathToLowVideos = "360-videos/roller-coaster/OG-tiles/low-quality/";
+const pathToVideos720 = "360-videos/roller-coaster/OG-tiles/720p/";
+const pathToVideos360 = "360-videos/roller-coaster/OG-tiles/360p/";
 
 const sourceMap = {
-  0: { high: pathToVideos + "tl.mp4", low: pathToLowVideos + "tl-low.mp4" },
-  1: { high: pathToVideos + "tr.mp4", low: pathToLowVideos + "tr-low.mp4" },
-  2: { high: pathToVideos + "bl.mp4", low: pathToLowVideos + "bl-low.mp4" },
-  3: { high: pathToVideos + "br.mp4", low: pathToLowVideos + "br-low.mp4" }
+  0: { high: pathToVideos720 + "tl.mp4", low: pathToVideos360 + "tl.mp4" },
+  1: { high: pathToVideos720 + "tr.mp4", low: pathToVideos360 + "tr.mp4" },
+  2: { high: pathToVideos720 + "bl.mp4", low: pathToVideos360 + "bl.mp4" },
+  3: { high: pathToVideos720 + "br.mp4", low: pathToVideos360 + "br.mp4" }
 };
 
 function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
