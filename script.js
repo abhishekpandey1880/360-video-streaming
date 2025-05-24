@@ -111,21 +111,6 @@ const getCameraDirection = () => {
   return dir; // This is a unit vector
 };
 
-// ABR - 2 Define the center direction of each quadrant
-// const quadrantDirections = [
-//   new THREE.Vector3(1, 1, 1),  // Top Front Right
-//   new THREE.Vector3(-1, 1, 1),  // Top Front Left
-//   new THREE.Vector3(1, 1, -1),  // Top Back Right
-//   new THREE.Vector3(-1, 1, -1),  // Top Back Left
-
-//   new THREE.Vector3(1, -1, 1),  // Bottom Front Right
-//   new THREE.Vector3(-1, -1, 1), // Bottom Front Left
-//   new THREE.Vector3(1, -1, -1),  // Bottom Back Right
-//   new THREE.Vector3(-1, -1, -1), // Bottom Back Left
-// ].map(v => v.normalize());
-
-
-
 const quadrantDirections = [
   new THREE.Vector3(-1, 1, -1),  // Top Front Left
   new THREE.Vector3(-1, 1, 1),  // Top Back Left
@@ -138,9 +123,6 @@ const quadrantDirections = [
   new THREE.Vector3(1, -1, 1),  // Bottom Back Right
 ].map(v => v.normalize());
 
-
-
-
 // ABR - 3 Calculate which quadrant in the view
 function getCurrentQuadrant() {
   const camDir = getCameraDirection();
@@ -150,9 +132,6 @@ function getCurrentQuadrant() {
   quadrantDirections.forEach((quadDir, index) => {
     const dot = camDir.dot(quadDir); // Cosine of angle between them
     // console.log("dot product: ", index, dot);
-    if(index === 0){
-      // console.log("zero dot", dot);
-    }
     if (dot > maxDot) {
       maxDot = dot;
       currentIndex = index;
