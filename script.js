@@ -17,7 +17,6 @@ const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(w, h);
 // renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
-// document.getElementById('container').appendChild(renderer.domElement);
 
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
@@ -31,23 +30,19 @@ controls.rotateSpeed = -1;
 
 const videos = [];
 
-// const pathToVideos720 = "360-videos/roller-coaster/OG-tiles/720p/";
-// const pathToVideos360 = "360-videos/roller-coaster/OG-tiles/360p/";
-// const pathToVideos144 = "360-videos/roller-coaster/OG-tiles/144p/";
-
 const pathToVideos720 = "360-videos/roller-coaster/OG-tiles/8-tiles/720p/";
 const pathToVideos360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
 const pathToVideos144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
 
 const sourceMap = {
-  0: { high: pathToVideos360 + "nftl.mp4", low: pathToVideos360 + "nftl.mp4" },
-  1: { high: pathToVideos144 + "nbtl.mp4", low: pathToVideos144 + "nbtl.mp4" },
-  2: { high: pathToVideos360 + "nftr.mp4", low: pathToVideos360 + "nftr.mp4" },
-  3: { high: pathToVideos144 + "nbtr.mp4", low: pathToVideos144 + "nbtr.mp4" },
-  4: { high: pathToVideos360 + "nfbl.mp4", low: pathToVideos360 + "nfbl.mp4" },
-  5: { high: pathToVideos144 + "nbbl.mp4", low: pathToVideos144 + "nbbl.mp4" },
-  6: { high: pathToVideos360 + "nfbr.mp4", low: pathToVideos360 + "nfbr.mp4" },
-  7: { high: pathToVideos144 + "nbbr.mp4", low: pathToVideos144 + "nbbr.mp4" },
+  0: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nftl.mp4" },
+  1: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nbtl.mp4" },
+  2: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nftr.mp4" },
+  3: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nbtr.mp4" },
+  4: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nfbl.mp4" },
+  5: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nbbl.mp4" },
+  6: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nfbr.mp4" },
+  7: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nbbr.mp4" },
 };
 
 function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
@@ -92,14 +87,6 @@ function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
   return mesh;
 }
 
-// const quads = [
-//   createQuadrant(0, -Math.PI / 2, Math.PI, 0, Math.PI / 2), // Top Left
-//   createQuadrant(1, Math.PI / 2, Math.PI, 0, Math.PI / 2),  // Top Right
-//   createQuadrant(2, -Math.PI / 2, Math.PI, Math.PI / 2, Math.PI / 2), // Bottom Left
-//   createQuadrant(3, Math.PI / 2, Math.PI, Math.PI / 2, Math.PI / 2)   // Bottom Right
-// ];
-
-
 const quads = [
   createQuadrant(0, -Math.PI / 2, Math.PI/2, 0, Math.PI / 2), // Front Top Left
   createQuadrant(1, 0, Math.PI/2, 0, Math.PI / 2), // Back Top Left
@@ -107,13 +94,11 @@ const quads = [
   createQuadrant(2, Math.PI, Math.PI/2, 0, Math.PI / 2),  // Front Top Right
   createQuadrant(3, Math.PI/2, Math.PI/2, 0, Math.PI / 2),  // Back Top Right
 
-
-  createQuadrant(4, -Math.PI / 2, Math.PI/2, Math.PI / 2, Math.PI / 2), // Front Bottom Left
+  createQuadrant(4, -Math.PI / 2, Math.PI/2, Math.PI/2, Math.PI / 2), // Front Bottom Left
   createQuadrant(5, 0, Math.PI / 2, Math.PI / 2, Math.PI / 2), // back Bottom Left
 
-  createQuadrant(6, Math.PI, Math.PI / 2, Math.PI / 2, Math.PI / 2),   // Front Bottom Right
-  createQuadrant(7, Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2)   // Back Bottom Right
-
+  createQuadrant(6, Math.PI, Math.PI/2, Math.PI/2, Math.PI/2),   // Front Bottom Right
+  createQuadrant(7, Math.PI/2, Math.PI/2, Math.PI/2, Math.PI/2)   // Back Bottom Right
 ];
 
 quads.forEach((q) => scene.add(q));
@@ -127,17 +112,34 @@ const getCameraDirection = () => {
 };
 
 // ABR - 2 Define the center direction of each quadrant
-const quadrantDirections = [
-  new THREE.Vector3(1, 1, 1),  // Top Front Right
-  new THREE.Vector3(-1, 1, 1),  // Top Front Left
-  new THREE.Vector3(1, 1, -1),  // Top Back Right
-  new THREE.Vector3(-1, 1, -1),  // Top Back Left
+// const quadrantDirections = [
+//   new THREE.Vector3(1, 1, 1),  // Top Front Right
+//   new THREE.Vector3(-1, 1, 1),  // Top Front Left
+//   new THREE.Vector3(1, 1, -1),  // Top Back Right
+//   new THREE.Vector3(-1, 1, -1),  // Top Back Left
 
-  new THREE.Vector3(1, -1, 1),  // Bottom Front Right
-  new THREE.Vector3(-1, -1, 1), // Bottom Front Left
-  new THREE.Vector3(1, -1, -1),  // Bottom Back Right
-  new THREE.Vector3(-1, -1, -1), // Bottom Back Left
+//   new THREE.Vector3(1, -1, 1),  // Bottom Front Right
+//   new THREE.Vector3(-1, -1, 1), // Bottom Front Left
+//   new THREE.Vector3(1, -1, -1),  // Bottom Back Right
+//   new THREE.Vector3(-1, -1, -1), // Bottom Back Left
+// ].map(v => v.normalize());
+
+
+
+const quadrantDirections = [
+  new THREE.Vector3(-1, 1, -1),  // Top Front Left
+  new THREE.Vector3(-1, 1, 1),  // Top Back Left
+  new THREE.Vector3(1, 1, -1),  // Top Front Right
+  new THREE.Vector3(1, 1, 1),  // Top Back Right
+
+  new THREE.Vector3(-1, -1, -1), // Bottom Front Left
+  new THREE.Vector3(-1, -1, 1), // Bottom Back Left
+  new THREE.Vector3(1, -1, -1),  // Bottom Front Right
+  new THREE.Vector3(1, -1, 1),  // Bottom Back Right
 ].map(v => v.normalize());
+
+
+
 
 // ABR - 3 Calculate which quadrant in the view
 function getCurrentQuadrant() {
@@ -147,6 +149,10 @@ function getCurrentQuadrant() {
 
   quadrantDirections.forEach((quadDir, index) => {
     const dot = camDir.dot(quadDir); // Cosine of angle between them
+    // console.log("dot product: ", index, dot);
+    if(index === 0){
+      // console.log("zero dot", dot);
+    }
     if (dot > maxDot) {
       maxDot = dot;
       currentIndex = index;
@@ -158,19 +164,17 @@ function getCurrentQuadrant() {
 
 // ABR - 4 Dynamically switch quality based on the viewport
 let currentQuadrant = -1;
-
 setInterval(() => {
   const newQuadrant = getCurrentQuadrant();
   if (newQuadrant !== currentQuadrant) {
     currentQuadrant = newQuadrant;
     console.log(currentQuadrant);
-    // quads.forEach((q, i) => {
-      // q.material.map = q.userData.textures[i === currentQuadrant ? "high" : "low"];
-      // q.material.needsUpdate = true;
-    // });
+    quads.forEach((q, i) => {
+      q.material.map = q.userData.textures[i === currentQuadrant ? "high" : "low"];
+      q.material.needsUpdate = true;
+    });
   }
 }, 200);
-
 
 // Play all videos once loaded
 let loadedCount = 0;
@@ -189,7 +193,6 @@ videos.forEach((v) => {
     }
   });
 });
-
 
 function animate() {
   requestAnimationFrame(animate);
