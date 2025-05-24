@@ -173,48 +173,22 @@ setInterval(() => {
 
 
 // Play all videos once loaded
-// let semaphores = new Array(8).fill(false); // Each video is a 'philosopher'
-// let totalReady = 0;
-
-// videos.forEach((v, index) => {
-//   v.preload = "auto";
-//   v.crossOrigin = "anonymous";
-//   v.loop = true;
-//   v.muted = true;
-//   v.playbackRate = 1;
-//   v.load();
-
-//   v.addEventListener("canplaythrough", () => {
-//     v.currentTime = 0;
-
-//     v.addEventListener("seeked", () => {
-//       if (!semaphores[index]) {
-//         semaphores[index] = true;
-//         totalReady++;
-//       }
-
-//       if (totalReady === 8) {
-//         // All philosophers have forks 🍴
-//         videos.forEach((vid) => {
-//           vid.play().catch((e) => console.warn("play() error", e));
-//         });
-//       }
-//     });
-
-//     v.pause();
-//     v.currentTime = 0; // triggers seeked
-//   });
-// });
-
-
-document.body.addEventListener("click", () => {
-  videos.forEach((vid) => {
-    vid.play().catch((e) => console.warn("play() error", e));
+let loadedCount = 0;
+videos.forEach((v) => {
+  v.addEventListener("loadeddata", () => {
+    loadedCount++;
+    if (loadedCount === videos.length) {
+      videos.forEach((vid) => {
+        vid.currentTime = 0;
+      });
+      setTimeout(() => {
+        videos.forEach((vid) => {
+          vid.play().catch((e) => console.log("Autoplay prevented:", e));
+        });
+      }, 500);
+    }
   });
 });
-
-
-
 
 
 function animate() {
