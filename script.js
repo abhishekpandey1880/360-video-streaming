@@ -33,12 +33,13 @@ const videos = [];
 
 const pathToVideos720 = "360-videos/roller-coaster/OG-tiles/720p/";
 const pathToVideos360 = "360-videos/roller-coaster/OG-tiles/360p/";
+const pathToVideos144 = "360-videos/roller-coaster/OG-tiles/144p/";
 
 const sourceMap = {
-  0: { high: pathToVideos720 + "tl.mp4", low: pathToVideos360 + "tl.mp4" },
-  1: { high: pathToVideos720 + "tr.mp4", low: pathToVideos360 + "tr.mp4" },
-  2: { high: pathToVideos720 + "bl.mp4", low: pathToVideos360 + "bl.mp4" },
-  3: { high: pathToVideos720 + "br.mp4", low: pathToVideos360 + "br.mp4" }
+  0: { high: pathToVideos720 + "tl.mp4", low: pathToVideos144 + "tl.mp4" },
+  1: { high: pathToVideos720 + "tr.mp4", low: pathToVideos144 + "tr.mp4" },
+  2: { high: pathToVideos720 + "bl.mp4", low: pathToVideos144 + "bl.mp4" },
+  3: { high: pathToVideos720 + "br.mp4", low: pathToVideos144 + "br.mp4" }
 };
 
 function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
