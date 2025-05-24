@@ -9,7 +9,7 @@ const scene = new THREE.Scene();
 
 // Camera setup
 const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
-camera.position.set(0,0,1);
+camera.position.set(0,0,0.01);
 // camera.position.z = 5;
 
 // Renderer setup
@@ -36,17 +36,18 @@ const videos = [];
 // const pathToVideos144 = "360-videos/roller-coaster/OG-tiles/144p/";
 
 const pathToVideos720 = "360-videos/roller-coaster/OG-tiles/8-tiles/720p/";
-
+const pathToVideos360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
+const pathToVideos144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
 
 const sourceMap = {
-  0: { high: pathToVideos720 + "nftl.mp4", low: pathToVideos720 + "nftl.mp4" },
-  1: { high: pathToVideos720 + "nbtl.mp4", low: pathToVideos720 + "nbtl.mp4" },
-  2: { high: pathToVideos720 + "nftr.mp4", low: pathToVideos720 + "nftr.mp4" },
-  3: { high: pathToVideos720 + "nbtr.mp4", low: pathToVideos720 + "nbtr.mp4" },
-  4: { high: pathToVideos720 + "nfbl.mp4", low: pathToVideos720 + "nfbl.mp4" },
-  5: { high: pathToVideos720 + "nbbl.mp4", low: pathToVideos720 + "nbbl.mp4" },
-  6: { high: pathToVideos720 + "nfbr.mp4", low: pathToVideos720 + "nfbr.mp4" },
-  7: { high: pathToVideos720 + "nbbr.mp4", low: pathToVideos720 + "nbbr.mp4" },
+  0: { high: pathToVideos360 + "nftl.mp4", low: pathToVideos360 + "nftl.mp4" },
+  1: { high: pathToVideos144 + "nbtl.mp4", low: pathToVideos144 + "nbtl.mp4" },
+  2: { high: pathToVideos360 + "nftr.mp4", low: pathToVideos360 + "nftr.mp4" },
+  3: { high: pathToVideos144 + "nbtr.mp4", low: pathToVideos144 + "nbtr.mp4" },
+  4: { high: pathToVideos360 + "nfbl.mp4", low: pathToVideos360 + "nfbl.mp4" },
+  5: { high: pathToVideos144 + "nbbl.mp4", low: pathToVideos144 + "nbbl.mp4" },
+  6: { high: pathToVideos360 + "nfbr.mp4", low: pathToVideos360 + "nfbr.mp4" },
+  7: { high: pathToVideos144 + "nbbr.mp4", low: pathToVideos144 + "nbbr.mp4" },
 };
 
 function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
@@ -56,6 +57,7 @@ function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
     v.crossOrigin = "anonymous";
     v.loop = true;
     v.muted = true;
+    v.playbackRate = 1;
     videos.push(v);
   });
 
@@ -171,22 +173,49 @@ setInterval(() => {
 
 
 // Play all videos once loaded
-let loadedCount = 0;
-videos.forEach((v) => {
-  v.addEventListener("loadeddata", () => {
-    loadedCount++;
-    if (loadedCount === videos.length) {
-      videos.forEach((vid) => {
-        vid.currentTime = 0;
-      });
-      setTimeout(() => {
-        videos.forEach((vid) => {
-          vid.play().catch((e) => console.log("Autoplay prevented:", e));
-        });
-      }, 500);
-    }
+// let semaphores = new Array(8).fill(false); // Each video is a 'philosopher'
+// let totalReady = 0;
+
+// videos.forEach((v, index) => {
+//   v.preload = "auto";
+//   v.crossOrigin = "anonymous";
+//   v.loop = true;
+//   v.muted = true;
+//   v.playbackRate = 1;
+//   v.load();
+
+//   v.addEventListener("canplaythrough", () => {
+//     v.currentTime = 0;
+
+//     v.addEventListener("seeked", () => {
+//       if (!semaphores[index]) {
+//         semaphores[index] = true;
+//         totalReady++;
+//       }
+
+//       if (totalReady === 8) {
+//         // All philosophers have forks 🍴
+//         videos.forEach((vid) => {
+//           vid.play().catch((e) => console.warn("play() error", e));
+//         });
+//       }
+//     });
+
+//     v.pause();
+//     v.currentTime = 0; // triggers seeked
+//   });
+// });
+
+
+document.body.addEventListener("click", () => {
+  videos.forEach((vid) => {
+    vid.play().catch((e) => console.warn("play() error", e));
   });
 });
+
+
+
+
 
 function animate() {
   requestAnimationFrame(animate);
