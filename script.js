@@ -141,19 +141,30 @@ function getCurrentQuadrant() {
   return currentIndex; // 0 = quad1, 1 = quad2, ...
 }
 
-// ABR - 4 Dynamically switch quality based on the viewport
-let currentQuadrant = -1;
+// ABR - 4 Dynamically switch quality based on dot product threshold
+const DOT_THRESHOLD = 0.35;
+
 setInterval(() => {
-  const newQuadrant = getCurrentQuadrant();
-  if (newQuadrant !== currentQuadrant) {
-    currentQuadrant = newQuadrant;
-    console.log(currentQuadrant);
-    quads.forEach((q, i) => {
-      q.material.map = q.userData.textures[i === currentQuadrant ? "high" : "low"];
+  const camDir = getCameraDirection();
+
+  quads.forEach((q, i) => {
+    const dot = camDir.dot(quadrantDirections[i]);
+
+    // Choose texture based on dot threshold
+    const isHighQuality = dot > DOT_THRESHOLD;
+    const currentTexture = q.material.map;
+    const desiredTexture = isHighQuality ? q.userData.textures.high : q.userData.textures.low;
+
+    // Only update if there's a change
+    if (currentTexture !== desiredTexture) {
+      q.material.map = desiredTexture;
       q.material.needsUpdate = true;
-    });
-  }
+    }
+  });
 }, 200);
+
+
+
 
 // Play all videos once loaded
 let loadedCount = 0;
