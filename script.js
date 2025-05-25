@@ -30,25 +30,27 @@ controls.rotateSpeed = -1;
 
 const videos = [];
 
-const pathToVideos720 = "360-videos/roller-coaster/OG-tiles/8-tiles/720p/";
-const pathToVideos360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
-const pathToVideos144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
+const path720 = "360-videos/roller-coaster/OG-tiles/8-tiles/720p/";
+const path480 = "360-videos/roller-coaster/OG-tiles/8-tiles/480p/";
+const path360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
+const path144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
 
 const sourceMap = {
-  0: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nftl.mp4" },
-  1: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nbtl.mp4" },
-  2: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nftr.mp4" },
-  3: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nbtr.mp4" },
-  4: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nfbl.mp4" },
-  5: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nbbl.mp4" },
-  6: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nfbr.mp4" },
-  7: { high: pathToVideos360 + "red.mp4", low: pathToVideos360 + "nbbr.mp4" },
+  0: { high: path480 + "nftl.mp4", mid: path360 + "nftl.mp4", low: path144 + "nftl.mp4" },
+  1: { high: path480 + "nbtl.mp4", mid: path360 + "nbtl.mp4", low: path144 + "nbtl.mp4" },
+  2: { high: path480 + "nftr.mp4", mid: path360 + "nftr.mp4", low: path144 + "nftr.mp4" },
+  3: { high: path480 + "nbtr.mp4", mid: path360 + "nbtr.mp4", low: path144 + "nbtr.mp4" },
+  4: { high: path480 + "nfbl.mp4", mid: path360 + "nfbl.mp4", low: path144 + "nfbl.mp4" },
+  5: { high: path480 + "nbbl.mp4", mid: path360 + "nbbl.mp4", low: path144 + "nbbl.mp4" },
+  6: { high: path480 + "nfbr.mp4", mid: path360 + "nfbr.mp4", low: path144 + "nfbr.mp4" },
+  7: { high: path480 + "nbbr.mp4", mid: path360 + "nbbr.mp4", low: path144 + "nbbr.mp4" },
 };
 
 function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
   const highVid = document.createElement("video");
+  const midVid = document.createElement("video");
   const lowVid = document.createElement("video");
-  [highVid, lowVid].forEach((v) => {
+  [highVid, midVid, lowVid].forEach((v) => {
     v.crossOrigin = "anonymous";
     v.loop = true;
     v.muted = true;
@@ -57,11 +59,13 @@ function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
   });
 
   highVid.src = sourceMap[index].high;
+  midVid.src = sourceMap[index].mid;
   lowVid.src = sourceMap[index].low;
 
   const highTexture = new THREE.VideoTexture(highVid);
+  const midTexture = new THREE.VideoTexture(midVid);
   const lowTexture = new THREE.VideoTexture(lowVid);
-  [highTexture, lowTexture].forEach((tex) => {
+  [highTexture, midTexture, lowTexture].forEach((tex) => {
     tex.minFilter = THREE.LinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.encoding = THREE.sRGBEncoding;
@@ -77,10 +81,12 @@ function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
 
   mesh.userData.textures = {
     high: highTexture,
+    mid: midTexture,
     low: lowTexture
   };
   mesh.userData.videos = {
     high: highVid,
+    mid: midVid,
     low: lowVid
   };
 
@@ -142,7 +148,13 @@ function getCurrentQuadrant() {
 }
 
 // ABR - 4 Dynamically switch quality based on dot product threshold
-const DOT_THRESHOLD = 0.35;
+// Here we are having two thresholds, then we do the dot product of the camera 
+// and tile vector, and based on the dot product if it is greater than 
+// the thresholds it get the quality of video ( high, mid or low ).
+
+// const DOT_THRESHOLD = 0.35;
+const thresholdOne = 0.5;
+const thresholdTwo = 0.1;
 
 setInterval(() => {
   const camDir = getCameraDirection();
@@ -150,17 +162,22 @@ setInterval(() => {
   quads.forEach((q, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
 
-    // Choose texture based on dot threshold
-    const isHighQuality = dot > DOT_THRESHOLD;
-    const currentTexture = q.material.map;
-    const desiredTexture = isHighQuality ? q.userData.textures.high : q.userData.textures.low;
+    let desiredTexture;
+    if (dot >= thresholdOne) {
+      desiredTexture = q.userData.textures.high;
+    } else if (dot >= thresholdTwo) {
+      desiredTexture = q.userData.textures.mid;
+    } else {
+      desiredTexture = q.userData.textures.low;
+    }
 
-    // Only update if there's a change
+    const currentTexture = q.material.map;
+
     if (currentTexture !== desiredTexture) {
       q.material.map = desiredTexture;
       q.material.needsUpdate = true;
     }
-  });
+  });  
 }, 200);
 
 
