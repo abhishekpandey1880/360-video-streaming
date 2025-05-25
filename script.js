@@ -17,7 +17,7 @@ const scene = new THREE.Scene();
 
 // Camera setup
 const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
-camera.position.set(0,0,0.01);
+camera.position.set(0, 0, 5);
 // camera.position.z = 5;
 
 // Renderer setup
@@ -101,21 +101,71 @@ function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
   return mesh;
 }
 
-const quads = [
-  createQuadrant(0, -Math.PI / 2, Math.PI/2, 0, Math.PI / 2), // Front Top Left
-  createQuadrant(1, 0, Math.PI/2, 0, Math.PI / 2), // Back Top Left
 
-  createQuadrant(2, Math.PI, Math.PI/2, 0, Math.PI / 2),  // Front Top Right
-  createQuadrant(3, Math.PI/2, Math.PI/2, 0, Math.PI / 2),  // Back Top Right
+// New approach to create only 8 video elements
 
-  createQuadrant(4, -Math.PI / 2, Math.PI/2, Math.PI/2, Math.PI / 2), // Front Bottom Left
-  createQuadrant(5, 0, Math.PI / 2, Math.PI / 2, Math.PI / 2), // back Bottom Left
+function createTile(index, phiStart, phiLength, thetaStart, thetaLength) {
+  const vid = document.createElement("video");
+  vid.crossOrigin = "anonymous";
+  vid.loop = true;
+  vid.muted = true;
+  vid.playsInline = true;
+  vid.preload = "auto";
 
-  createQuadrant(6, Math.PI, Math.PI/2, Math.PI/2, Math.PI/2),   // Front Bottom Right
-  createQuadrant(7, Math.PI/2, Math.PI/2, Math.PI/2, Math.PI/2)   // Back Bottom Right
+  // start at low quality
+  vid.src = sourceMap[index].low;
+  const texture = new THREE.VideoTexture(vid);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.encoding = THREE.sRGBEncoding;
+
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
+    side: THREE.BackSide
+  });
+  const geom = new THREE.SphereGeometry(20, 32, 32, phiStart, phiLength, thetaStart, thetaLength);
+  const mesh = new THREE.Mesh(geom, material);
+
+  return {
+    mesh,
+    video: vid,
+    texture,
+    currentQuality: "low",
+    index
+  };
+}
+
+// build tiles
+const tiles = [
+  createTile(0, -Math.PI / 2, Math.PI / 2, 0, Math.PI / 2), // Front Top Left
+  createTile(1, 0, Math.PI / 2, 0, Math.PI / 2), // Back Top Left
+
+  createTile(2, Math.PI, Math.PI / 2, 0, Math.PI / 2),  // Front Top Right
+  createTile(3, Math.PI / 2, Math.PI / 2, 0, Math.PI / 2),  // Back Top Right
+
+  createTile(4, -Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2), // Front Bottom Left
+  createTile(5, 0, Math.PI / 2, Math.PI / 2, Math.PI / 2), // back Bottom Left
+
+  createTile(6, Math.PI, Math.PI / 2, Math.PI / 2, Math.PI / 2),   // Front Bottom Right
+  createTile(7, Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2)   // Back Bottom Right
 ];
 
-quads.forEach((q) => scene.add(q));
+
+for (let i = 0; i < 8; i++) {
+  
+  // const t = createTile(i, );
+  const t = tiles[i];
+  
+  // tiles.push(t);
+  scene.add(t.mesh);
+
+  // once ready, start the one video
+  t.video.addEventListener("loadeddata", () => {
+    t.video.currentTime = globalTime;
+    t.video.play().catch(() => { });
+  });
+}
+
 
 
 // ABR - 1 Get Camera Direction
@@ -155,49 +205,74 @@ function getCurrentQuadrant() {
 }
 
 // ABR - 4 Dynamically switch quality based on dot product threshold
-// Here we are having two thresholds, then we do the dot product of the camera 
-// and tile vector, and based on the dot product if it is greater than 
+// Here we are having two thresholds, then we do the dot product of the camera
+// and tile vector, and based on the dot product if it is greater than
 // the thresholds it get the quality of video ( high, mid or low ).
 
-// const DOT_THRESHOLD = 0.35;
+// *** new approach with 8 tiles
+async function swapQualityForAll(desiredQuality) {
+  // 1) Pause all
+  tiles.forEach(t => t.video.pause());
+
+  // 2) Swap src & load
+  tiles.forEach(t => {
+    t.video.src = sourceMap[t.index][desiredQuality];
+    t.video.load();
+  });
+
+  // 3) Wait for metadata on all
+  await Promise.all(tiles.map(t =>
+    new Promise(res => {
+      if (t.video.readyState >= 1) return res();
+      t.video.addEventListener("loadedmetadata", res, { once: true });
+    })
+  ));
+
+  // 4) Seek all to the same globalTime
+  tiles.forEach(t => { t.video.currentTime = globalTime; });
+
+  // 5) Wait for each seek to finish
+  await Promise.all(tiles.map(t =>
+    new Promise(res => {
+      t.video.addEventListener("seeked", res, { once: true });
+    })
+  ));
+
+  // 6) Play them all together
+  tiles.forEach(t => t.video.play().catch(() => { }));
+}
+
+
+
+
+// **** New approach 8 tiles, set interval code
 const thresholdOne = 0.5;
 const thresholdTwo = 0.1;
 
-setInterval(() => {
-  // Added for sync videos
-  updateGlobalTime();
+let lastQuality = null;
 
+setInterval(() => {
+  updateGlobalTime();
   const camDir = getCameraDirection();
 
-  quads.forEach((q, i) => {
+  // Find the “worst” quality needed across all tiles
+  const qualities = tiles.map((t, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
+    return dot >= thresholdOne ? "high"
+      : dot >= thresholdTwo ? "mid"
+        : "low";
+  });
+  // e.g. if _any_ tile wants “mid” and none want “high”, you pick “mid”
+  const desired = qualities.includes("high") ? "high"
+    : qualities.includes("mid") ? "mid"
+      : "low";
 
-    if(i===1 || i===3){
-      console.log(i, dot);
-    }
+  if (desired !== lastQuality) {
+    lastQuality = desired;
+    swapQualityForAll(desired);
+  }
+}, 500);
 
-    let desiredTexture;
-    if (dot >= thresholdOne) {
-      desiredTexture = q.userData.textures.high;
-    } else if (dot >= thresholdTwo) {
-      desiredTexture = q.userData.textures.mid;
-    } else {
-      desiredTexture = q.userData.textures.low;
-    }
-
-    const currentTexture = q.material.map;
-
-    if (currentTexture !== desiredTexture) {
-      q.material.map = desiredTexture;
-      q.material.needsUpdate = true;
-    }
-
-
-    // Added for sync videos
-    syncAllVideosTo(globalTime);
-
-  });  
-}, 100);
 
 
 
