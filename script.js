@@ -186,14 +186,7 @@ setInterval(() => {
 
 
     // Added for sync videos
-    const videos = q.userData.videos;
-    ["high", "mid", "low"].forEach((key) => {
-      const vid = videos[key];
-      if(Math.abs(vid.currentTime - globalTime) > 0.2 ) {
-        vid.currentTime = globalTime;
-      }
-    });
-
+    syncAllVideosTo(globalTime);
 
   });  
 }, 200);
@@ -201,8 +194,7 @@ setInterval(() => {
 
 
 
-// Preventing video lag on switch, and making all the videos in sync.
-
+// Preventing video lag on switch, and making all the videos in sync. Added for video sync
 let playbackStartTime = null;
 function updateGlobalTime() {
   if (!playbackStartTime) return;
@@ -210,6 +202,21 @@ function updateGlobalTime() {
   globalTime = elapsed;
 }
 
+function syncAllVideosTo(time) {
+  videos.forEach((vid) => {
+    if (Math.abs(vid.currentTime - time) > 0.2) {
+      vid.pause();
+      vid.currentTime = time;
+    }
+  });
+
+  // Play after short delay to let seek settle
+  setTimeout(() => {
+    videos.forEach((vid) => {
+      if (vid.paused) vid.play().catch(() => { });
+    });
+  }, 50);
+}
 
 
 
@@ -231,7 +238,7 @@ videos.forEach((v) => {
           vid.currentTime = 0;
           vid.play().catch((e) => console.log("Autoplay prevented:", e));
         });
-      }, 500);
+      }, 200);
     }
   });
 });
