@@ -4,6 +4,9 @@ import * as THREE from "three";
 const w = window.innerWidth;
 const h = window.innerHeight;
 
+// Added for video sync
+let globalTime = 0;
+
 // Initialize Three.js scene
 const scene = new THREE.Scene();
 
@@ -157,6 +160,9 @@ const thresholdOne = 0.5;
 const thresholdTwo = 0.1;
 
 setInterval(() => {
+  // Added for sync videos
+  updateGlobalTime();
+
   const camDir = getCameraDirection();
 
   quads.forEach((q, i) => {
@@ -177,8 +183,32 @@ setInterval(() => {
       q.material.map = desiredTexture;
       q.material.needsUpdate = true;
     }
+
+
+    // Added for sync videos
+    const videos = q.userData.videos;
+    ["high", "mid", "low"].forEach((key) => {
+      const vid = videos[key];
+      if(Math.abs(vid.currentTime - globalTime) > 0.2 ) {
+        vid.currentTime = globalTime;
+      }
+    });
+
+
   });  
 }, 200);
+
+
+
+
+// Preventing video lag on switch, and making all the videos in sync.
+
+let playbackStartTime = null;
+function updateGlobalTime() {
+  if (!playbackStartTime) return;
+  const elapsed = (performance.now() - playbackStartTime) / 1000; // in seconds
+  globalTime = elapsed;
+}
 
 
 
@@ -193,7 +223,12 @@ videos.forEach((v) => {
         vid.currentTime = 0;
       });
       setTimeout(() => {
+        // Added for vidoe sync
+        playbackStartTime = performance.now();
+
         videos.forEach((vid) => {
+          // Added for video sync
+          vid.currentTime = 0;
           vid.play().catch((e) => console.log("Autoplay prevented:", e));
         });
       }, 500);
