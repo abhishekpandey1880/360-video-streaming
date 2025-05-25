@@ -145,7 +145,6 @@ function getCurrentQuadrant() {
 
   quadrantDirections.forEach((quadDir, index) => {
     const dot = camDir.dot(quadDir); // Cosine of angle between them
-    // console.log("dot product: ", index, dot);
     if (dot > maxDot) {
       maxDot = dot;
       currentIndex = index;
@@ -173,6 +172,10 @@ setInterval(() => {
   quads.forEach((q, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
 
+    if(i===1 || i===3){
+      console.log(i, dot);
+    }
+
     let desiredTexture;
     if (dot >= thresholdOne) {
       desiredTexture = q.userData.textures.high;
@@ -194,7 +197,7 @@ setInterval(() => {
     syncAllVideosTo(globalTime);
 
   });  
-}, 200);
+}, 100);
 
 
 
@@ -264,7 +267,7 @@ function loadTraceCSV(url) {
     });
 }
 
-loadTraceCSV("camera_trace.csv");
+loadTraceCSV("./csvs/trace-2.csv");
 
 function updateCameraFromTrace() {
   if (!tracePlaybackStart || traceIndex >= traceData.length) return;
@@ -282,16 +285,14 @@ function updateCameraFromTrace() {
   if (lookDir) {
     const target = new THREE.Vector3().copy(camera.position).add(lookDir);
     camera.lookAt(target);
+    camera.updateMatrixWorld(); // Added during trace, to update the vector
   }
 }
-
-
 
 
 function animate() {
   requestAnimationFrame(animate);
   updateCameraFromTrace();
   renderer.render(scene, camera);
-  controls.update();
 }
 animate();
