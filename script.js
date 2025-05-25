@@ -7,6 +7,11 @@ const h = window.innerHeight;
 // Added for video sync
 let globalTime = 0;
 
+// Added for trace routes
+let traceData = [];
+let traceIndex = 0;
+let tracePlaybackStart = null;
+
 // Initialize Three.js scene
 const scene = new THREE.Scene();
 
@@ -243,8 +248,49 @@ videos.forEach((v) => {
   });
 });
 
+
+
+// Added for trace routes ( tracing )
+function loadTraceCSV(url) {
+  fetch(url)
+    .then(res => res.text())
+    .then(data => {
+      const lines = data.trim().split("\n").slice(1); // remove header
+      traceData = lines.map(line => {
+        const [time, x, y, z] = line.split(",").map(Number);
+        return { time, dir: new THREE.Vector3(x, y, z).normalize() };
+      });
+      tracePlaybackStart = performance.now();
+    });
+}
+
+loadTraceCSV("camera_trace.csv");
+
+function updateCameraFromTrace() {
+  if (!tracePlaybackStart || traceIndex >= traceData.length) return;
+
+  const currentTime = (performance.now() - tracePlaybackStart) / 1000;
+
+  while (
+    traceIndex + 1 < traceData.length &&
+    traceData[traceIndex + 1].time <= currentTime
+  ) {
+    traceIndex++;
+  }
+
+  const lookDir = traceData[traceIndex]?.dir;
+  if (lookDir) {
+    const target = new THREE.Vector3().copy(camera.position).add(lookDir);
+    camera.lookAt(target);
+  }
+}
+
+
+
+
 function animate() {
   requestAnimationFrame(animate);
+  updateCameraFromTrace();
   renderer.render(scene, camera);
   controls.update();
 }
