@@ -249,7 +249,15 @@ setInterval(() => {
   const qstab = 1 - Math.min(qualitySwitches / 10, 1);
 
   const QREA = w1 * lastQmatch + w3 * lastBuse + w2 * rlatencyNorm + w4 * qstab;
-  QREA_logs.push(QREA);
+  // QREA_logs.push(QREA);
+  QREA_logs.push({
+    time: QREA_logs.length * 5,
+    q: lastQmatch,
+    r: rlatencyNorm,
+    b: lastBuse,
+    s: qstab,
+    qrea: QREA
+  });
 
   console.log(`QREA: ${QREA.toFixed(3)} | Q=${lastQmatch.toFixed(2)}, R=${rlatencyNorm.toFixed(2)}, B=${lastBuse.toFixed(2)}, S=${qstab.toFixed(2)}`);
   qualitySwitches = 0;
@@ -257,14 +265,19 @@ setInterval(() => {
 
 
 function exportQREALog() {
-  const csv = QREA_logs.map((v, i) => `${i * 5},${v.toFixed(3)}`).join("\n");
-  const blob = new Blob([`Time,QREA\n${csv}`], { type: "text/csv" });
+  const header = "Time,Qmatch,Rlatency,Buse,Qstability,QREA\n";
+  const rows = QREA_logs.map(log =>
+    `${log.time},${log.q.toFixed(3)},${log.r.toFixed(3)},${log.b.toFixed(3)},${log.s.toFixed(3)},${log.qrea.toFixed(3)}`
+  ).join("\n");
+
+  const blob = new Blob([header + rows], { type: "text/csv" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
   a.download = "QREA_log.csv";
   a.click();
 }
+
 
 window.addEventListener("keydown", (e) => {
   if (e.key.toLowerCase() === "d") {
