@@ -172,10 +172,6 @@ setInterval(() => {
   quads.forEach((q, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
 
-    if(i===1 || i===3){
-      console.log(i, dot);
-    }
-
     let desiredTexture;
     if (dot >= thresholdOne) {
       desiredTexture = q.userData.textures.high;
