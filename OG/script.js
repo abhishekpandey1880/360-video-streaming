@@ -1,119 +1,194 @@
-// Initialize Three.js scene
+import { OrbitControls } from "jsm/controls/OrbitControls.js";
+import * as THREE from "three";
+
+// Scene setup
+const w = window.innerWidth;
+const h = window.innerHeight;
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x000000);
-
-// Camera setup
-const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-camera.position.z = 5;
-
-// Renderer setup
+const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
+camera.position.set(0, 0, 0.01);
 const renderer = new THREE.WebGLRenderer({ antialias: true });
-renderer.setSize(window.innerWidth, window.innerHeight);
-document.getElementById('container').appendChild(renderer.domElement);
+renderer.setSize(w, h);
+document.body.appendChild(renderer.domElement);
 
-// Create video element
-const video = document.createElement('video');
-video.src = "360-sun.mp4"; // Placeholder - replace with actual video URL
-video.crossOrigin = "anonymous";
-video.loop = true;
-video.muted = true; // Muted to allow autoplay
+// Controls
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0, -5);
+controls.update();
 
-// Create video texture
-const videoTexture = new THREE.VideoTexture(video);
-videoTexture.minFilter = THREE.LinearFilter;
-videoTexture.magFilter = THREE.LinearFilter;
+// QREA variables
+let qualitySwitches = 0;
+let lastQualities = ["low"];
+let QREA_logs = [];
+let lastQmatch = 1;
+let lastLatency = 100;
+let lastBuse = 0.5;
 
-// Material with video texture
-const videoMaterial = new THREE.MeshBasicMaterial({
-  map: videoTexture,
-  side: THREE.DoubleSide
-});
+const thresholdOne = 0.5;
+const thresholdTwo = 0.1;
 
-// Create default shape (cube)
-let currentGeometry = new THREE.BoxGeometry(3, 3, 3);
-let object = new THREE.Mesh(currentGeometry, videoMaterial);
-scene.add(object);
+// Trace CSV
+let traceData = [];
+let traceIndex = 0;
+let tracePlaybackStart = null;
 
-// Add ambient light
-const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-scene.add(ambientLight);
+function loadTraceCSV(url) {
+  fetch(url)
+    .then(res => res.text())
+    .then(data => {
+      const lines = data.trim().split("\n").slice(1);
+      traceData = lines.map(line => {
+        const [time, x, y, z] = line.split(",").map(Number);
+        console.log("csv read done");
+        return { time, dir: new THREE.Vector3(x, y, z).normalize() };
+      });
+      tracePlaybackStart = performance.now();
+    });
+}
 
-// Add directional light
-const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-directionalLight.position.set(1, 1, 1);
-scene.add(directionalLight);
+loadTraceCSV("/csvs/trace-2.csv");
 
-// Animation variables
-let isRotating = false;
-
-// Control functions
-function playPauseVideo() {
-  if (video.paused) {
-    video.play();
-  } else {
-    video.pause();
+function updateCameraFromTrace() {
+  if (!tracePlaybackStart || traceIndex >= traceData.length) return;
+  const currentTime = (performance.now() - tracePlaybackStart) / 1000;
+  while (
+    traceIndex + 1 < traceData.length &&
+    traceData[traceIndex + 1].time <= currentTime
+  ) {
+    traceIndex++;
+  }
+  const lookDir = traceData[traceIndex]?.dir;
+  if (lookDir) {
+    const target = new THREE.Vector3().copy(camera.position).add(lookDir);
+    camera.lookAt(target);
+    camera.updateMatrixWorld();
   }
 }
 
-function toggleRotation() {
-  isRotating = !isRotating;
+// Video sources
+const pathHigh = "360-videos/roller-coaster/OG-roller-coaster-flip.mp4";
+const pathMid = "360-videos/roller-coaster/OG-roller-coaster-flip.mp4";
+const pathLow = "360-videos/roller-coaster/OG-roller-coaster-flip.mp4";
+
+const highVid = document.createElement("video");
+const midVid = document.createElement("video");
+const lowVid = document.createElement("video");
+[highVid, midVid, lowVid].forEach(v => {
+  v.crossOrigin = "anonymous";
+  v.loop = true;
+  v.muted = true;
+  v.playbackRate = 1;
+});
+highVid.src = pathHigh;
+midVid.src = pathMid;
+lowVid.src = pathLow;
+
+const highTex = new THREE.VideoTexture(highVid);
+const midTex = new THREE.VideoTexture(midVid);
+const lowTex = new THREE.VideoTexture(lowVid);
+[highTex, midTex, lowTex].forEach(tex => {
+  tex.minFilter = THREE.LinearFilter;
+  tex.magFilter = THREE.LinearFilter;
+  tex.encoding = THREE.sRGBEncoding;
+});
+
+const material = new THREE.MeshBasicMaterial({ map: lowTex, side: THREE.BackSide });
+const sphereGeo = new THREE.SphereGeometry(20, 64, 64);
+const sphereMesh = new THREE.Mesh(sphereGeo, material);
+sphereMesh.userData = { textures: { high: highTex, mid: midTex, low: lowTex } };
+scene.add(sphereMesh);
+
+function getCameraDirection() {
+  const dir = new THREE.Vector3();
+  camera.getWorldDirection(dir);
+  return dir;
 }
 
-function changeShape(shape) {
-  scene.remove(object);
+function getCurrentQuality() {
+  const map = sphereMesh.material.map;
+  const { high, mid } = sphereMesh.userData.textures;
+  if (map === high) return "high";
+  if (map === mid) return "mid";
+  return "low";
+}
 
-  switch (shape) {
-    case 'cube':
-      currentGeometry = new THREE.BoxGeometry(3, 3, 3);
-      break;
-    case 'sphere':
-      currentGeometry = new THREE.SphereGeometry(2, 32, 32);
-      break;
-    case 'cylinder':
-      currentGeometry = new THREE.CylinderGeometry(1.5, 1.5, 3, 32);
-      break;
-    case 'torus':
-      currentGeometry = new THREE.TorusGeometry(2, 0.5, 16, 100);
-      break;
-    default:
-      currentGeometry = new THREE.BoxGeometry(3, 3, 3);
+setInterval(() => {
+  const camDir = getCameraDirection();
+  const sphereDir = new THREE.Vector3(0, 0, 1).normalize();
+  const dot = camDir.dot(sphereDir);
+
+  let desired;
+  if (dot >= thresholdOne) desired = "high";
+  else if (dot >= thresholdTwo) desired = "mid";
+  else desired = "low";
+
+  const currQual = getCurrentQuality();
+  if (currQual !== desired) {
+    sphereMesh.material.map = sphereMesh.userData.textures[desired];
+    sphereMesh.material.needsUpdate = true;
+    qualitySwitches++;
+    lastQualities[0] = desired;
   }
 
-  object = new THREE.Mesh(currentGeometry, videoMaterial);
-  scene.add(object);
+  lastQmatch = (currQual === desired) ? 1 : 0;
+  const bitrate = { high: 1000, mid: 600, low: 200 };
+  const totalBW = bitrate[currQual];
+  lastBuse = totalBW / totalBW;
+}, 1000);
+
+setInterval(() => {
+  const w1 = 0.4, w2 = 0.2, w3 = 0.3, w4 = 0.1;
+  const rlat = 1 - Math.min(lastLatency, 300) / 300;
+  const qstab = 1 - Math.min(qualitySwitches / 10, 1);
+  const QREA = w1 * lastQmatch + w3 * lastBuse + w2 * rlat + w4 * qstab;
+
+  QREA_logs.push({
+    time: QREA_logs.length * 5,
+    q: lastQmatch,
+    r: rlat,
+    b: lastBuse,
+    s: qstab,
+    qrea: QREA
+  });
+  console.log(`QREA: ${QREA.toFixed(3)}`);
+
+  qualitySwitches = 0;
+}, 5000);
+
+function exportQREALog() {
+  const header = "Time,Qmatch,Rlatency,Buse,Qstability,QREA\n";
+  const rows = QREA_logs.map(log =>
+    `${log.time},${log.q.toFixed(3)},${log.r.toFixed(3)},${log.b.toFixed(3)},${log.s.toFixed(3)},${log.qrea.toFixed(3)}`
+  ).join("\n");
+  const blob = new Blob([header + rows], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "QREA_log.csv";
+  a.click();
 }
 
-// Event listeners
-document.getElementById('playPauseBtn').addEventListener('click', playPauseVideo);
-document.getElementById('rotateBtn').addEventListener('click', toggleRotation);
-document.getElementById('shapeSelect').addEventListener('change', function () {
-  changeShape(this.value);
+window.addEventListener("keydown", e => {
+  if (e.key.toLowerCase() === "d") {
+    exportQREALog();
+    console.log("QREA log download triggered.");
+  }
 });
 
-// Handle window resize
-window.addEventListener('resize', function () {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
+let loaded = 0;
+[highVid, midVid, lowVid].forEach(v => {
+  v.addEventListener("loadeddata", () => {
+    loaded++;
+    if (loaded === 3) {
+      [highVid, midVid, lowVid].forEach(vid => { vid.currentTime = 0; vid.play().catch(() => { }); });
+    }
+  });
 });
 
-// Animation loop
 function animate() {
   requestAnimationFrame(animate);
-
-  if (isRotating) {
-    // object.rotation.x += 0.005;
-    object.rotation.y += 0.01;
-  }
-
+  updateCameraFromTrace();
+  controls.update();
   renderer.render(scene, camera);
 }
-
-// Start animation
 animate();
-
-// Try to autoplay the video (might be blocked by browser policies)
-video.play().catch(e => {
-  console.log('Video autoplay was prevented:', e);
-  console.log('Please click the Play/Pause button to start the video');
-});
