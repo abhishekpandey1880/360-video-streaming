@@ -12,6 +12,15 @@ let traceData = [];
 let traceIndex = 0;
 let tracePlaybackStart = null;
 
+// Added for QREA
+let qualitySwitches = 0;
+let lastQualities = Array(8).fill("low");
+let QREA_logs = [];
+let lastQmatch = 1;
+let lastLatency = 100;
+let lastBuse = 0.5;
+
+
 // Initialize Three.js scene
 const scene = new THREE.Scene();
 
@@ -172,10 +181,6 @@ setInterval(() => {
   quads.forEach((q, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
 
-    if(i===1 || i===3){
-      console.log(i, dot);
-    }
-
     let desiredTexture;
     if (dot >= thresholdOne) {
       desiredTexture = q.userData.textures.high;
@@ -199,6 +204,74 @@ setInterval(() => {
   });  
 }, 100);
 
+
+
+// Added for QREA
+setInterval(() => {
+  const camDir = getCameraDirection();
+  const qualityToBitrate = { high: 1000, mid: 600, low: 200 };
+  let qualityMatchCount = 0;
+  let viewportTileCount = 0;
+  let visibleBandwidth = 0;
+  let totalBandwidth = 0;
+
+  quads.forEach((q, i) => {
+    const dot = camDir.dot(quadrantDirections[i]);
+    const current = dot >= thresholdOne ? "high"
+      : dot >= thresholdTwo ? "mid"
+        : "low";
+
+    const currentQuality = getCurrentTileQuality(q);
+    if (dot >= thresholdTwo) {
+      viewportTileCount++;
+      if (current === currentQuality) qualityMatchCount++;
+    }
+
+    totalBandwidth += qualityToBitrate[currentQuality];
+    if (dot >= thresholdTwo) {
+      visibleBandwidth += qualityToBitrate[currentQuality];
+    }
+
+    if (current !== lastQualities[i]) {
+      qualitySwitches++;
+      lastQualities[i] = current;
+    }
+  });
+
+  lastQmatch = qualityMatchCount / (viewportTileCount || 1);
+  lastBuse = visibleBandwidth / (totalBandwidth || 1);
+}, 1000);
+
+
+setInterval(() => {
+  const w1 = 0.4, w2 = 0.2, w3 = 0.3, w4 = 0.1;
+  const rlatencyNorm = 1 - Math.min(lastLatency, 300) / 300;
+  const qstab = 1 - Math.min(qualitySwitches / 10, 1);
+
+  const QREA = w1 * lastQmatch + w3 * lastBuse + w2 * rlatencyNorm + w4 * qstab;
+  QREA_logs.push(QREA);
+
+  console.log(`QREA: ${QREA.toFixed(3)} | Q=${lastQmatch.toFixed(2)}, R=${rlatencyNorm.toFixed(2)}, B=${lastBuse.toFixed(2)}, S=${qstab.toFixed(2)}`);
+  qualitySwitches = 0;
+}, 5000);
+
+
+function exportQREALog() {
+  const csv = QREA_logs.map((v, i) => `${i * 5},${v.toFixed(3)}`).join("\n");
+  const blob = new Blob([`Time,QREA\n${csv}`], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "QREA_log.csv";
+  a.click();
+}
+
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "d") {
+    exportQREALog();
+    console.log("QREA log download triggered.");
+  }
+});
 
 
 
@@ -226,6 +299,15 @@ function syncAllVideosTo(time) {
   }, 50);
 }
 
+
+// Added for QREA
+function getCurrentTileQuality(quad) {
+  const currentMap = quad.material.map;
+  const textures = quad.userData.textures;
+  if (currentMap === textures.high) return "high";
+  if (currentMap === textures.mid) return "mid";
+  return "low";
+}
 
 
 // Play all videos once loaded
