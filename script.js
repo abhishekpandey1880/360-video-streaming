@@ -10,6 +10,14 @@ import Hls from "hls.js";
 /*
 ffmpeg -i nbbr.mp4 -filter_complex "[0:v]split=4[v1][v2][v3][v4];[v1]scale=180:144[v1out];[v2]scale=406:360[v2out];[v3]scale=540:480[v3out];[v4]scale=720:640[v4out]" -map "[v1out]" -c:v:0 libx264 -b:v:0 300k -map "[v2out]" -c:v:1 libx264 -b:v:1 600k -map "[v3out]" -c:v:2 libx264 -b:v:2 1000k -map "[v4out]" -c:v:3 libx264 -b:v:3 2000k -f hls -hls_time 4 -hls_playlist_type vod -var_stream_map "v:0 v:1 v:2 v:3" -master_pl_name master.m3u8 stream_%v.m3u8 
 
+--> this is 4s split videos
+
+
+
+ffmpeg -i nbbr.mp4 -filter_complex "[0:v]split=4[v1][v2][v3][v4];[v1]scale=180:144[v1out];[v2]scale=406:360[v2out];[v3]scale=540:480[v3out];[v4]scale=720:640[v4out]" -map "[v1out]" -c:v:0 libx264 -b:v:0 300k -map "[v2out]" -c:v:1 libx264 -b:v:1 600k -map "[v3out]" -c:v:2 libx264 -b:v:2 1000k -map "[v4out]" -c:v:3 libx264 -b:v:3 2000k -f hls -hls_time 1 -hls_playlist_type vod -var_stream_map "v:0 v:1 v:2 v:3" -master_pl_name master.m3u8 stream_%v.m3u8
+
+--> this is for 1 second split vidoes
+
 */
 
 const w = window.innerWidth;
@@ -88,7 +96,7 @@ function createHLSTile(index, phiStart, phiLength, thetaStart, thetaLength) {
   const mesh = new THREE.Mesh(geom, material);
 
   const hls = new Hls({ lowLatencyMode: true });
-  hls.loadSource(`hls/tiles/${index}/master.m3u8`);
+  hls.loadSource(`hls/tiles-trim/${index}/master.m3u8`);
   hls.attachMedia(vid);
 
   hls.on(Hls.Events.LEVEL_SWITCHED, (e, data) => {
@@ -292,7 +300,7 @@ setInterval(() => {
   //   t.mesh.visible = true;
   // });
 
-}, 1000);
+}, 200);
 
 
 
