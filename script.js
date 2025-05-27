@@ -8,7 +8,7 @@ import Hls from "hls.js";
 
 // Command to convert a .mp4 file in (1280 X 720) to m3u8 
 /*
-ffmpeg -i nbbr.mp4 -filter_complex "[0:v]split=4[v1][v2][v3][v4];[v1]scale=180:144[v1out];[v2]scale=406:360[v2out];[v3]scale=540:480[v3out];[v4]scale=720:640[v4out]" -map "[v1out]" -c:v:0 libx264 -b:v:0 300k -map "[v2out]" -c:v:1 libx264 -b:v:1 600k -map "[v3out]" -c:v:2 libx264 -b:v:2 1000k -map "[v4out]" -c:v:3 libx264 -b:v:3 2000k -f hls -hls_time 4 -hls_playlist_type vod -var_stream_map "v:0 v:1 v:2 v:3" -master_pl_name master.m3u8 stream_%v.m3u8
+ffmpeg -i nbbr.mp4 -filter_complex "[0:v]split=4[v1][v2][v3][v4];[v1]scale=180:144[v1out];[v2]scale=406:360[v2out];[v3]scale=540:480[v3out];[v4]scale=720:640[v4out]" -map "[v1out]" -c:v:0 libx264 -b:v:0 300k -map "[v2out]" -c:v:1 libx264 -b:v:1 600k -map "[v3out]" -c:v:2 libx264 -b:v:2 1000k -map "[v4out]" -c:v:3 libx264 -b:v:3 2000k -f hls -hls_time 4 -hls_playlist_type vod -var_stream_map "v:0 v:1 v:2 v:3" -master_pl_name master.m3u8 stream_%v.m3u8 
 
 */
 
@@ -249,33 +249,50 @@ let lastQuality = null;
 // new set interval for quality change using threholds
 setInterval(() => {
   const camDir = getCameraDirection();
-  const now = performance.now(); // current time in ms
-  const SWITCH_COOLDOWN = 1000;  // cooldown per tile (5s)
+  const now = performance.now();
+  const SWITCH_COOLDOWN = 500; // 5 seconds between switches per tile
 
-  tiles.forEach((t, i) => {
-    const dot = camDir.dot(quadrantDirections[i]);
-    let desiredLevel = 0;
+  const tileScores = tiles.map((t, i) => ({
+    tile: t,
+    dot: camDir.dot(quadrantDirections[i]),
+    index: i
+  }));
+
+  // Sort tiles by how much they align with the camera
+  tileScores.sort((a, b) => b.dot - a.dot);
+
+  // Only switch top 4 most visible tiles
+  tileScores.slice(0, 4).forEach(({ tile: t, dot, index }) => {
+    let desiredLevel = 0; // default to "low"
     if (dot >= thresholdOne) desiredLevel = 3;
     else if (dot >= thresholdTwo) desiredLevel = 2;
 
+    // Conditions to allow a level switch
     const canSwitch = (now - t.lastSwitchTime) > SWITCH_COOLDOWN;
-    const currentLevel = t.hls.currentLevel;
 
     if (
       t.hls &&
       t.hls.levels &&
       desiredLevel < t.hls.levels.length &&
       canSwitch &&
-      desiredLevel !== currentLevel
+      t.hls.nextLevel !== desiredLevel
     ) {
-      // t.hls.currentLevel = desiredLevel;
-      t.hls.nextLevel = desiredLevel;
-
+      t.hls.nextLevel = desiredLevel; // Smooth switch
       t.lastSwitchTime = now;
-      console.log(`Tile ${i} switched to level ${desiredLevel}`);
+      console.log(`Tile ${index} queued level ${desiredLevel}`);
     }
   });
-}, 1000); // check every second, but throttle per tile
+
+  // tileScores.slice(4).forEach(({ tile: t }) => {
+  //   if (!t.video.paused) t.video.pause();
+  //   t.mesh.visible = false;
+  // });
+  // tileScores.slice(0, 4).forEach(({ tile: t }) => {
+  //   if (t.video.paused) t.video.play().catch(() => { });
+  //   t.mesh.visible = true;
+  // });
+
+}, 1000);
 
 
 
