@@ -91,12 +91,18 @@ function createHLSTile(index, phiStart, phiLength, thetaStart, thetaLength) {
   hls.loadSource(`hls/tiles/${index}/master.m3u8`);
   hls.attachMedia(vid);
 
+  hls.on(Hls.Events.LEVEL_SWITCHED, (e, data) => {
+    console.log(`Tile ${index} is now at level ${data.level}`);
+  });
+
   // Play video when ready
   hls.on(Hls.Events.MANIFEST_PARSED, () => {
     vid.play().catch(() => { });
   });
 
-  return { mesh, video: vid, texture, index, hls };
+  // return { mesh, video: vid, texture, index, hls };
+  return { mesh, video: vid, texture, index, hls, lastSwitchTime: 0 }; // <-- Add lastSwitchTime
+
 }
 
 
@@ -209,32 +215,67 @@ function getCurrentQuadrant() {
 
 
 // **** New approach 8 tiles, set interval code
-const thresholdOne = 0.5;
-const thresholdTwo = 0.1;
+const thresholdOne = 0.4;
+const thresholdTwo = 0.2;
 
 let lastQuality = null;
 
+
+// Old set interval 
+
+// setInterval(() => {
+//   updateGlobalTime();
+//   const camDir = getCameraDirection();
+
+//   // Find the “worst” quality needed across all tiles
+//   const qualities = tiles.map((t, i) => {
+//     const dot = camDir.dot(quadrantDirections[i]);
+//     return dot >= thresholdOne ? "high"
+//       : dot >= thresholdTwo ? "mid"
+//         : "low";
+//   });
+//   // e.g. if _any_ tile wants “mid” and none want “high”, you pick “mid”
+//   const desired = qualities.includes("high") ? "high"
+//     : qualities.includes("mid") ? "mid"
+//       : "low";
+
+//   if (desired !== lastQuality) {
+//     lastQuality = desired;
+//     // swapQualityForAll(desired);
+//   }
+// }, 3000);
+
+
+// new set interval for quality change using threholds
 setInterval(() => {
-  updateGlobalTime();
   const camDir = getCameraDirection();
+  const now = performance.now(); // current time in ms
+  const SWITCH_COOLDOWN = 5000;  // cooldown per tile (5s)
 
-  // Find the “worst” quality needed across all tiles
-  const qualities = tiles.map((t, i) => {
+  tiles.forEach((t, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
-    return dot >= thresholdOne ? "high"
-      : dot >= thresholdTwo ? "mid"
-        : "low";
-  });
-  // e.g. if _any_ tile wants “mid” and none want “high”, you pick “mid”
-  const desired = qualities.includes("high") ? "high"
-    : qualities.includes("mid") ? "mid"
-      : "low";
+    let desiredLevel = 0;
+    if (dot >= thresholdOne) desiredLevel = 3;
+    else if (dot >= thresholdTwo) desiredLevel = 2;
 
-  if (desired !== lastQuality) {
-    lastQuality = desired;
-    // swapQualityForAll(desired);
-  }
-}, 3000);
+    const canSwitch = (now - t.lastSwitchTime) > SWITCH_COOLDOWN;
+    const currentLevel = t.hls.currentLevel;
+
+    if (
+      t.hls &&
+      t.hls.levels &&
+      desiredLevel < t.hls.levels.length &&
+      canSwitch &&
+      desiredLevel !== currentLevel
+    ) {
+      // t.hls.currentLevel = desiredLevel;
+      t.hls.nextLevel = desiredLevel;
+
+      t.lastSwitchTime = now;
+      console.log(`Tile ${i} switched to level ${desiredLevel}`);
+    }
+  });
+}, 150); // check every second, but throttle per tile
 
 
 
