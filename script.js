@@ -250,7 +250,7 @@ let lastQuality = null;
 setInterval(() => {
   const camDir = getCameraDirection();
   const now = performance.now(); // current time in ms
-  const SWITCH_COOLDOWN = 5000;  // cooldown per tile (5s)
+  const SWITCH_COOLDOWN = 1000;  // cooldown per tile (5s)
 
   tiles.forEach((t, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
@@ -275,7 +275,7 @@ setInterval(() => {
       console.log(`Tile ${i} switched to level ${desiredLevel}`);
     }
   });
-}, 150); // check every second, but throttle per tile
+}, 1000); // check every second, but throttle per tile
 
 
 
