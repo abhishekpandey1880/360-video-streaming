@@ -30,7 +30,7 @@ const scene = new THREE.Scene();
 
 // Camera setup
 const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
-camera.position.set(0,0,0.01);
+camera.position.set(0,0,5);
 // camera.position.z = 5;
 
 // Renderer setup
@@ -57,14 +57,14 @@ const path360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
 const path144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
 
 const sourceMap = {
-  0: { high: path480 + "nftl.mp4", mid: path360 + "nftl.mp4", low: path144 + "nftl.mp4" },
-  1: { high: path480 + "nbtl.mp4", mid: path360 + "nbtl.mp4", low: path144 + "nbtl.mp4" },
-  2: { high: path480 + "nftr.mp4", mid: path360 + "nftr.mp4", low: path144 + "nftr.mp4" },
-  3: { high: path480 + "nbtr.mp4", mid: path360 + "nbtr.mp4", low: path144 + "nbtr.mp4" },
-  4: { high: path480 + "nfbl.mp4", mid: path360 + "nfbl.mp4", low: path144 + "nfbl.mp4" },
-  5: { high: path480 + "nbbl.mp4", mid: path360 + "nbbl.mp4", low: path144 + "nbbl.mp4" },
-  6: { high: path480 + "nfbr.mp4", mid: path360 + "nfbr.mp4", low: path144 + "nfbr.mp4" },
-  7: { high: path480 + "nbbr.mp4", mid: path360 + "nbbr.mp4", low: path144 + "nbbr.mp4" },
+  0: { high: path720 + "nftl.mp4", mid: path360 + "nftl.mp4", low: path144 + "nftl.mp4" },
+  1: { high: path720 + "nbtl.mp4", mid: path360 + "nbtl.mp4", low: path144 + "nbtl.mp4" },
+  2: { high: path720 + "nftr.mp4", mid: path360 + "nftr.mp4", low: path144 + "nftr.mp4" },
+  3: { high: path720 + "nbtr.mp4", mid: path360 + "nbtr.mp4", low: path144 + "nbtr.mp4" },
+  4: { high: path720 + "nfbl.mp4", mid: path360 + "nfbl.mp4", low: path144 + "nfbl.mp4" },
+  5: { high: path720 + "nbbl.mp4", mid: path360 + "nbbl.mp4", low: path144 + "nbbl.mp4" },
+  6: { high: path720 + "nfbr.mp4", mid: path360 + "nfbr.mp4", low: path144 + "nfbr.mp4" },
+  7: { high: path720 + "nbbr.mp4", mid: path360 + "nbbr.mp4", low: path144 + "nbbr.mp4" },
 };
 
 function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
@@ -184,9 +184,16 @@ function getCurrentQuadrant() {
 // and tile vector, and based on the dot product if it is greater than 
 // the thresholds it get the quality of video ( high, mid or low ).
 
+
+function getDesiredQuality(dot) {
+  if (dot >= thresholdOne) return "high";
+  if (dot >= thresholdTwo) return "mid";
+  return "low";
+}
+
 // const DOT_THRESHOLD = 0.35;
-const thresholdOne = 0.5;
-const thresholdTwo = 0.1;
+const thresholdOne = 0.6;
+const thresholdTwo = 0.2;
 
 setInterval(() => {
   // Added for sync videos
@@ -194,9 +201,13 @@ setInterval(() => {
 
   const camDir = getCameraDirection();
 
+
+
   quads.forEach((q, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
 
+    const desiredQuality = getDesiredQuality(dot);
+    const currentQuality = getCurrentTileQuality(q);
     // Added for sync videos
     syncAllVideosTo(globalTime);
 
@@ -211,13 +222,35 @@ setInterval(() => {
 
     const currentTexture = q.material.map;
 
-    if (currentTexture !== desiredTexture) {
+    // if (currentTexture !== desiredTexture) {
+    //   // Pause non-needed videos
+    //   Object.entries(q.userData.videos).forEach(([quality, vid]) => {
+    //     const tex = q.userData.textures[quality];
+    //     if (tex === desiredTexture) {
+    //       if (vid.paused) vid.play().catch(() => { });
+    //     } else {
+    //       if (!vid.paused) vid.pause();
+    //     }
+    //   });
+
+
+    if (desiredQuality !== currentQuality) {
+      const desiredTexture = q.userData.textures[desiredQuality];
+
+      // Switch only if needed
+      Object.entries(q.userData.videos).forEach(([quality, vid]) => {
+        if (quality === desiredQuality) vid.play().catch(() => { });
+        else vid.pause();
+      });
+
+
       q.material.map = desiredTexture;
       q.material.needsUpdate = true;
     }
+    
 
   });  
-}, 100);
+}, 500);
 
 
 
@@ -344,7 +377,7 @@ function updateGlobalTime() {
 
 function syncAllVideosTo(time) {
   videos.forEach((vid) => {
-    if (Math.abs(vid.currentTime - time) > 0.2) {
+    if (Math.abs(vid.currentTime - time) > 0.5) {
       vid.pause();
       vid.currentTime = time;
     }
