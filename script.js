@@ -7,6 +7,10 @@ const h = window.innerHeight;
 // Added for video sync
 let globalTime = 0;
 
+// average tile quality
+const qualityScore = { high: 3, mid: 2, low: 1 };
+const avgQualityLog = [];
+
 // Added for trace routes
 let traceData = [];
 let traceIndex = 0;
@@ -93,7 +97,7 @@ function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
     side: THREE.BackSide
   });
 
-  const geometry = new THREE.SphereGeometry(20, 64, 64, phiStart, phiLength, thetaStart, thetaLength);
+  const geometry = new THREE.SphereGeometry(20, 32, 32, phiStart, phiLength, thetaStart, thetaLength);
   const mesh = new THREE.Mesh(geometry, videoMaterial);
 
   mesh.userData.textures = {
@@ -125,6 +129,18 @@ const quads = [
 ];
 
 quads.forEach((q) => scene.add(q));
+
+
+
+// average tile quality
+function computeAverageQuality() {
+  let totalQuality = 0;
+  quads.forEach(q => {
+    const quality = getCurrentTileQuality(q);
+    totalQuality += qualityScore[quality] || 1; // fallback to 1 (low) if undefined
+  });
+  return totalQuality / quads.length;
+}
 
 
 // ABR - 1 Get Camera Direction
@@ -181,6 +197,9 @@ setInterval(() => {
   quads.forEach((q, i) => {
     const dot = camDir.dot(quadrantDirections[i]);
 
+    // Added for sync videos
+    syncAllVideosTo(globalTime);
+
     let desiredTexture;
     if (dot >= thresholdOne) {
       desiredTexture = q.userData.textures.high;
@@ -196,10 +215,6 @@ setInterval(() => {
       q.material.map = desiredTexture;
       q.material.needsUpdate = true;
     }
-
-
-    // Added for sync videos
-    syncAllVideosTo(globalTime);
 
   });  
 }, 100);
@@ -259,7 +274,11 @@ setInterval(() => {
     qrea: QREA
   });
 
-  console.log(`QREA: ${QREA.toFixed(3)} | Q=${lastQmatch.toFixed(2)}, R=${rlatencyNorm.toFixed(2)}, B=${lastBuse.toFixed(2)}, S=${qstab.toFixed(2)}`);
+  // === NEW: Push average quality to log every 5 seconds ===
+  const avgQuality = computeAverageQuality();
+  avgQualityLog.push({ time: QREA_logs.length * 5, avgQuality });
+
+  console.log(`QREA: ${QREA.toFixed(3)} | Q=${lastQmatch.toFixed(2)}, R=${rlatencyNorm.toFixed(2)}, B=${lastBuse.toFixed(2)}, S=${qstab.toFixed(2)}, AvgQ=${avgQuality.toFixed(2)}`);
   qualitySwitches = 0;
 }, 5000);
 
@@ -277,6 +296,33 @@ function exportQREALog() {
   a.download = "QREA_log.csv";
   a.click();
 }
+
+
+// average tile quality
+function exportAvgQualityLog() {
+  const header = "Time,AvgQuality\n";
+  const rows = avgQualityLog.map(entry =>
+    `${entry.time},${entry.avgQuality.toFixed(2)}`
+  ).join("\n");
+
+  const blob = new Blob([header + rows], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "AvgQuality_log.csv";
+  a.click();
+}
+
+
+// average tile quality
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "q") {
+    exportAvgQualityLog();
+    console.log("Average Quality log download triggered.");
+  }
+});
+
+
 
 
 window.addEventListener("keydown", (e) => {
