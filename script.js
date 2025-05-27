@@ -1,5 +1,16 @@
 import { OrbitControls } from "jsm/controls/OrbitControls.js";
 import * as THREE from "three";
+import Hls from "hls.js";
+
+// import Hls from 'https://cdn.jsdelivr.net/npm/hls.js-esm@0.0.2/+esm'
+// const hls = new window.Hls();
+
+
+// Command to convert a .mp4 file in (1280 X 720) to m3u8 
+/*
+ffmpeg -i nbbr.mp4 -filter_complex "[0:v]split=4[v1][v2][v3][v4];[v1]scale=180:144[v1out];[v2]scale=406:360[v2out];[v3]scale=540:480[v3out];[v4]scale=720:640[v4out]" -map "[v1out]" -c:v:0 libx264 -b:v:0 300k -map "[v2out]" -c:v:1 libx264 -b:v:1 600k -map "[v3out]" -c:v:2 libx264 -b:v:2 1000k -map "[v4out]" -c:v:3 libx264 -b:v:3 2000k -f hls -hls_time 4 -hls_playlist_type vod -var_stream_map "v:0 v:1 v:2 v:3" -master_pl_name master.m3u8 stream_%v.m3u8
+
+*/
 
 const w = window.innerWidth;
 const h = window.innerHeight;
@@ -38,82 +49,31 @@ controls.rotateSpeed = -1;
 
 const videos = [];
 
-const path720 = "360-videos/roller-coaster/OG-tiles/8-tiles/720p/";
-const path480 = "360-videos/roller-coaster/OG-tiles/8-tiles/480p/";
-const path360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
-const path144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
+// const path720 = "360-videos/roller-coaster/OG-tiles/8-tiles/720p/";
+// const path480 = "360-videos/roller-coaster/OG-tiles/8-tiles/480p/";
+// const path360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
+// const path144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
 
-const sourceMap = {
-  0: { high: path480 + "nftl.mp4", mid: path360 + "nftl.mp4", low: path144 + "nftl.mp4" },
-  1: { high: path480 + "nbtl.mp4", mid: path360 + "nbtl.mp4", low: path144 + "nbtl.mp4" },
-  2: { high: path480 + "nftr.mp4", mid: path360 + "nftr.mp4", low: path144 + "nftr.mp4" },
-  3: { high: path480 + "nbtr.mp4", mid: path360 + "nbtr.mp4", low: path144 + "nbtr.mp4" },
-  4: { high: path480 + "nfbl.mp4", mid: path360 + "nfbl.mp4", low: path144 + "nfbl.mp4" },
-  5: { high: path480 + "nbbl.mp4", mid: path360 + "nbbl.mp4", low: path144 + "nbbl.mp4" },
-  6: { high: path480 + "nfbr.mp4", mid: path360 + "nfbr.mp4", low: path144 + "nfbr.mp4" },
-  7: { high: path480 + "nbbr.mp4", mid: path360 + "nbbr.mp4", low: path144 + "nbbr.mp4" },
-};
+// const sourceMap = {
+//   0: { high: path480 + "nftl.mp4", mid: path360 + "nftl.mp4", low: path144 + "nftl.mp4" },
+//   1: { high: path480 + "nbtl.mp4", mid: path360 + "nbtl.mp4", low: path144 + "nbtl.mp4" },
+//   2: { high: path480 + "nftr.mp4", mid: path360 + "nftr.mp4", low: path144 + "nftr.mp4" },
+//   3: { high: path480 + "nbtr.mp4", mid: path360 + "nbtr.mp4", low: path144 + "nbtr.mp4" },
+//   4: { high: path480 + "nfbl.mp4", mid: path360 + "nfbl.mp4", low: path144 + "nfbl.mp4" },
+//   5: { high: path480 + "nbbl.mp4", mid: path360 + "nbbl.mp4", low: path144 + "nbbl.mp4" },
+//   6: { high: path480 + "nfbr.mp4", mid: path360 + "nfbr.mp4", low: path144 + "nfbr.mp4" },
+//   7: { high: path480 + "nbbr.mp4", mid: path360 + "nbbr.mp4", low: path144 + "nbbr.mp4" },
+// };
 
-function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
-  const highVid = document.createElement("video");
-  const midVid = document.createElement("video");
-  const lowVid = document.createElement("video");
-  [highVid, midVid, lowVid].forEach((v) => {
-    v.crossOrigin = "anonymous";
-    v.loop = true;
-    v.muted = true;
-    v.playbackRate = 1;
-    videos.push(v);
-  });
-
-  highVid.src = sourceMap[index].high;
-  midVid.src = sourceMap[index].mid;
-  lowVid.src = sourceMap[index].low;
-
-  const highTexture = new THREE.VideoTexture(highVid);
-  const midTexture = new THREE.VideoTexture(midVid);
-  const lowTexture = new THREE.VideoTexture(lowVid);
-  [highTexture, midTexture, lowTexture].forEach((tex) => {
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.encoding = THREE.sRGBEncoding;
-  });
-
-  const videoMaterial = new THREE.MeshBasicMaterial({
-    map: lowTexture,
-    side: THREE.BackSide
-  });
-
-  const geometry = new THREE.SphereGeometry(20, 64, 64, phiStart, phiLength, thetaStart, thetaLength);
-  const mesh = new THREE.Mesh(geometry, videoMaterial);
-
-  mesh.userData.textures = {
-    high: highTexture,
-    mid: midTexture,
-    low: lowTexture
-  };
-  mesh.userData.videos = {
-    high: highVid,
-    mid: midVid,
-    low: lowVid
-  };
-
-  return mesh;
-}
-
-
-// New approach to create only 8 video elements
-
-function createTile(index, phiStart, phiLength, thetaStart, thetaLength) {
+// Create HLS Tiles
+function createHLSTile(index, phiStart, phiLength, thetaStart, thetaLength) {
   const vid = document.createElement("video");
   vid.crossOrigin = "anonymous";
-  vid.loop = true;
   vid.muted = true;
   vid.playsInline = true;
-  vid.preload = "auto";
+  vid.loop = true;  // Optional
+  videos.push(vid);
 
-  // start at low quality
-  vid.src = sourceMap[index].low;
   const texture = new THREE.VideoTexture(vid);
   texture.minFilter = THREE.LinearFilter;
   texture.magFilter = THREE.LinearFilter;
@@ -123,32 +83,35 @@ function createTile(index, phiStart, phiLength, thetaStart, thetaLength) {
     map: texture,
     side: THREE.BackSide
   });
+
   const geom = new THREE.SphereGeometry(20, 32, 32, phiStart, phiLength, thetaStart, thetaLength);
   const mesh = new THREE.Mesh(geom, material);
 
-  return {
-    mesh,
-    video: vid,
-    texture,
-    currentQuality: "low",
-    index
-  };
+  const hls = new Hls({ lowLatencyMode: true });
+  hls.loadSource(`hls/tiles/${index}/master.m3u8`);
+  hls.attachMedia(vid);
+
+  // Play video when ready
+  hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    vid.play().catch(() => { });
+  });
+
+  return { mesh, video: vid, texture, index, hls };
 }
 
-// build tiles
+
+// HLS tiles
 const tiles = [
-  createTile(0, -Math.PI / 2, Math.PI / 2, 0, Math.PI / 2), // Front Top Left
-  createTile(1, 0, Math.PI / 2, 0, Math.PI / 2), // Back Top Left
-
-  createTile(2, Math.PI, Math.PI / 2, 0, Math.PI / 2),  // Front Top Right
-  createTile(3, Math.PI / 2, Math.PI / 2, 0, Math.PI / 2),  // Back Top Right
-
-  createTile(4, -Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2), // Front Bottom Left
-  createTile(5, 0, Math.PI / 2, Math.PI / 2, Math.PI / 2), // back Bottom Left
-
-  createTile(6, Math.PI, Math.PI / 2, Math.PI / 2, Math.PI / 2),   // Front Bottom Right
-  createTile(7, Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2)   // Back Bottom Right
+  createHLSTile(0, -Math.PI / 2, Math.PI / 2, 0, Math.PI / 2),
+  createHLSTile(1, 0, Math.PI / 2, 0, Math.PI / 2),
+  createHLSTile(2, Math.PI, Math.PI / 2, 0, Math.PI / 2),
+  createHLSTile(3, Math.PI / 2, Math.PI / 2, 0, Math.PI / 2),
+  createHLSTile(4, -Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2),
+  createHLSTile(5, 0, Math.PI / 2, Math.PI / 2, Math.PI / 2),
+  createHLSTile(6, Math.PI, Math.PI / 2, Math.PI / 2, Math.PI / 2),
+  createHLSTile(7, Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2)
 ];
+
 
 
 for (let i = 0; i < 8; i++) {
@@ -209,38 +172,38 @@ function getCurrentQuadrant() {
 // and tile vector, and based on the dot product if it is greater than
 // the thresholds it get the quality of video ( high, mid or low ).
 
-// *** new approach with 8 tiles
-async function swapQualityForAll(desiredQuality) {
-  // 1) Pause all
-  tiles.forEach(t => t.video.pause());
+// // *** new approach with 8 tiles
+// async function swapQualityForAll(desiredQuality) {
+//   // 1) Pause all
+//   tiles.forEach(t => t.video.pause());
 
-  // 2) Swap src & load
-  tiles.forEach(t => {
-    t.video.src = sourceMap[t.index][desiredQuality];
-    t.video.load();
-  });
+//   // 2) Swap src & load
+//   tiles.forEach(t => {
+//     t.video.src = sourceMap[t.index][desiredQuality];
+//     t.video.load();
+//   });
 
-  // 3) Wait for metadata on all
-  await Promise.all(tiles.map(t =>
-    new Promise(res => {
-      if (t.video.readyState >= 1) return res();
-      t.video.addEventListener("loadedmetadata", res, { once: true });
-    })
-  ));
+//   // 3) Wait for metadata on all
+//   await Promise.all(tiles.map(t =>
+//     new Promise(res => {
+//       if (t.video.readyState >= 1) return res();
+//       t.video.addEventListener("loadedmetadata", res, { once: true });
+//     })
+//   ));
 
-  // 4) Seek all to the same globalTime
-  tiles.forEach(t => { t.video.currentTime = globalTime; });
+//   // 4) Seek all to the same globalTime
+//   tiles.forEach(t => { t.video.currentTime = globalTime; });
 
-  // 5) Wait for each seek to finish
-  await Promise.all(tiles.map(t =>
-    new Promise(res => {
-      t.video.addEventListener("seeked", res, { once: true });
-    })
-  ));
+//   // 5) Wait for each seek to finish
+//   await Promise.all(tiles.map(t =>
+//     new Promise(res => {
+//       t.video.addEventListener("seeked", res, { once: true });
+//     })
+//   ));
 
-  // 6) Play them all together
-  tiles.forEach(t => t.video.play().catch(() => { }));
-}
+//   // 6) Play them all together
+//   tiles.forEach(t => t.video.play().catch(() => { }));
+// }
 
 
 
@@ -269,9 +232,9 @@ setInterval(() => {
 
   if (desired !== lastQuality) {
     lastQuality = desired;
-    swapQualityForAll(desired);
+    // swapQualityForAll(desired);
   }
-}, 500);
+}, 3000);
 
 
 
@@ -279,6 +242,7 @@ setInterval(() => {
 
 // Preventing video lag on switch, and making all the videos in sync. Added for video sync
 let playbackStartTime = null;
+
 function updateGlobalTime() {
   if (!playbackStartTime) return;
   const elapsed = (performance.now() - playbackStartTime) / 1000; // in seconds
@@ -364,10 +328,10 @@ function updateCameraFromTrace() {
   }
 }
 
-
 function animate() {
   requestAnimationFrame(animate);
   updateCameraFromTrace();
+  controls.update();
   renderer.render(scene, camera);
 }
 animate();
