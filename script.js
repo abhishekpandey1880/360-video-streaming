@@ -86,36 +86,23 @@ function updateCameraFromTrace() {
 }
 
 // Video sources
-const pathHigh = "360-videos/roller-coaster/OG-roller-coaster-flip.mp4";
-const pathMid = "360-videos/roller-coaster/OG-roller-coaster-flip.mp4";
-const pathLow = "360-videos/roller-coaster/OG-roller-coaster-flip.mp4";
+const videoPath = "./360-videos/roller-coaster/OG-roller-coaster-flip.mp4";
 
-const highVid = document.createElement("video");
-const midVid = document.createElement("video");
-const lowVid = document.createElement("video");
-[highVid, midVid, lowVid].forEach(v => {
-  v.crossOrigin = "anonymous";
-  v.loop = true;
-  v.muted = true;
-  v.playbackRate = 1;
-});
-highVid.src = pathHigh;
-midVid.src = pathMid;
-lowVid.src = pathLow;
+const video = document.createElement("video");
+video.crossOrigin = "anonymous";
+video.loop = true;
+video.muted = true;
+video.playbackRate = 1;
+video.src = videoPath;
 
-const highTex = new THREE.VideoTexture(highVid);
-const midTex = new THREE.VideoTexture(midVid);
-const lowTex = new THREE.VideoTexture(lowVid);
-[highTex, midTex, lowTex].forEach(tex => {
-  tex.minFilter = THREE.LinearFilter;
-  tex.magFilter = THREE.LinearFilter;
-  tex.encoding = THREE.sRGBEncoding;
-});
+const videoTexture = new THREE.VideoTexture(video);
+videoTexture.minFilter = THREE.LinearFilter;
+videoTexture.magFilter = THREE.LinearFilter;
+videoTexture.encoding = THREE.sRGBEncoding;
 
-const material = new THREE.MeshBasicMaterial({ map: lowTex, side: THREE.BackSide });
+const material = new THREE.MeshBasicMaterial({ map: videoTexture, side: THREE.BackSide });
 const sphereGeo = new THREE.SphereGeometry(20, 64, 64);
 const sphereMesh = new THREE.Mesh(sphereGeo, material);
-sphereMesh.userData = { textures: { high: highTex, mid: midTex, low: lowTex } };
 scene.add(sphereMesh);
 
 function getCameraDirection() {
@@ -175,15 +162,13 @@ window.addEventListener("keydown", e => {
   }
 });
 
-let loaded = 0;
-[highVid, midVid, lowVid].forEach(v => {
-  v.addEventListener("loadeddata", () => {
-    loaded++;
-    if (loaded === 3) {
-      [highVid, midVid, lowVid].forEach(vid => { vid.currentTime = 0; vid.play().catch(() => { }); });
-    }
+video.addEventListener("loadeddata", () => {
+  video.currentTime = 0;
+  video.play().catch((e) => {
+    console.log("Autoplay failed, user gesture required", e);
   });
 });
+
 
 function animate() {
   requestAnimationFrame(animate);
