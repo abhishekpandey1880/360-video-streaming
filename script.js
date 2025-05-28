@@ -96,11 +96,11 @@ function createHLSTile(index, phiStart, phiLength, thetaStart, thetaLength) {
   const mesh = new THREE.Mesh(geom, material);
 
   const hls = new Hls({ lowLatencyMode: true });
-  hls.loadSource(`hls/tiles-trim/${index}/master.m3u8`);
+  hls.loadSource(`hls/tiles-1s/${index}/master.m3u8`);
   hls.attachMedia(vid);
 
   hls.on(Hls.Events.LEVEL_SWITCHED, (e, data) => {
-    console.log(`Tile ${index} is now at level ${data.level}`);
+    // console.log(`Tile ${index} is now at level ${data.level}`);
   });
 
   // Play video when ready
@@ -228,80 +228,89 @@ const thresholdTwo = 0.2;
 
 let lastQuality = null;
 
-
-// Old set interval 
-
-// setInterval(() => {
-//   updateGlobalTime();
-//   const camDir = getCameraDirection();
-
-//   // Find the “worst” quality needed across all tiles
-//   const qualities = tiles.map((t, i) => {
-//     const dot = camDir.dot(quadrantDirections[i]);
-//     return dot >= thresholdOne ? "high"
-//       : dot >= thresholdTwo ? "mid"
-//         : "low";
-//   });
-//   // e.g. if _any_ tile wants “mid” and none want “high”, you pick “mid”
-//   const desired = qualities.includes("high") ? "high"
-//     : qualities.includes("mid") ? "mid"
-//       : "low";
-
-//   if (desired !== lastQuality) {
-//     lastQuality = desired;
-//     // swapQualityForAll(desired);
-//   }
-// }, 3000);
-
+let oldDir = null;
 
 // new set interval for quality change using threholds
+function switchTilesQuality(){
+  // setInterval(() => {
+    const camDir = getCameraDirection();
+    if (oldDir && oldDir.equals(camDir)) return;
+  
+    const now = performance.now();
+    const SWITCH_COOLDOWN = 10; // 5 seconds between switches per tile
+  
+    const tileScores = tiles.map((t, i) => ({
+      tile: t,
+      dot: camDir.dot(quadrantDirections[i]),
+      index: i
+    }));
+  
+    // Sort tiles by how much they align with the camera
+    tileScores.sort((a, b) => b.dot - a.dot);
+  
+    // Switch tiles quality
+    tileScores.forEach(({ tile: t, dot, index }) => {
+      let desiredLevel = 1; // default to "low"
+      if (dot >= thresholdOne) desiredLevel = 2;
+      else if (dot >= thresholdTwo) desiredLevel = 1;
+  
+      // Conditions to allow a level switch
+      const canSwitch = (now - t.lastSwitchTime) > SWITCH_COOLDOWN;
+  
+      if (
+        t.hls &&
+        t.hls.levels &&
+        desiredLevel < t.hls.levels.length &&
+        canSwitch &&
+        t.hls.nextLevel !== desiredLevel
+      ) {
+        t.hls.nextLevel = desiredLevel; // Smooth switch
+        t.lastSwitchTime = now;
+        console.log(`Tile ${index} queued level ${desiredLevel}`);
+      }
+    });
+  
+    oldDir = camDir.clone();
+  
+  // }, 2000);
+}
+
+
+
+
+// camera check
+let lastStableTime = 0;
+const STABILITY_THRESHOLD_DOT = 0.899; // closer to 1 means very stable
+const STABLE_HOLD_DURATION = 1000; // ms: how long camera must be stable before triggering
+
 setInterval(() => {
-  const camDir = getCameraDirection();
+  const camDir = getCameraDirection().normalize();
   const now = performance.now();
-  const SWITCH_COOLDOWN = 500; // 5 seconds between switches per tile
 
-  const tileScores = tiles.map((t, i) => ({
-    tile: t,
-    dot: camDir.dot(quadrantDirections[i]),
-    index: i
-  }));
+  // First-time setup
+  if (!oldDir) {
+    oldDir = camDir.clone();
+    lastStableTime = now;
+    return;
+  }
 
-  // Sort tiles by how much they align with the camera
-  tileScores.sort((a, b) => b.dot - a.dot);
+  const dot = camDir.dot(oldDir); // cosine similarity of angle
 
-  // Only switch top 4 most visible tiles
-  tileScores.slice(0, 4).forEach(({ tile: t, dot, index }) => {
-    let desiredLevel = 0; // default to "low"
-    if (dot >= thresholdOne) desiredLevel = 3;
-    else if (dot >= thresholdTwo) desiredLevel = 2;
-
-    // Conditions to allow a level switch
-    const canSwitch = (now - t.lastSwitchTime) > SWITCH_COOLDOWN;
-
-    if (
-      t.hls &&
-      t.hls.levels &&
-      desiredLevel < t.hls.levels.length &&
-      canSwitch &&
-      t.hls.nextLevel !== desiredLevel
-    ) {
-      t.hls.nextLevel = desiredLevel; // Smooth switch
-      t.lastSwitchTime = now;
-      console.log(`Tile ${index} queued level ${desiredLevel}`);
+  if (dot >= STABILITY_THRESHOLD_DOT) {
+    // Camera is stable
+    if ((now - lastStableTime) >= STABLE_HOLD_DURATION) {
+      // Enough time has passed since stable
+      switchTilesQuality(camDir, now);
     }
-  });
+  } else {
+    // Camera moved → reset stability timer
+    lastStableTime = now;
+  }
 
-  // tileScores.slice(4).forEach(({ tile: t }) => {
-  //   if (!t.video.paused) t.video.pause();
-  //   t.mesh.visible = false;
-  // });
-  // tileScores.slice(0, 4).forEach(({ tile: t }) => {
-  //   if (t.video.paused) t.video.play().catch(() => { });
-  //   t.mesh.visible = true;
-  // });
+  // Always update oldDir
+  oldDir.copy(camDir);
 
-}, 200);
-
+}, 200); // shorter interval, but switch only when stable
 
 
 
