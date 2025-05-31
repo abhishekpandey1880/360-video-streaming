@@ -57,21 +57,6 @@ controls.rotateSpeed = -1;
 
 const videos = [];
 
-// const path720 = "360-videos/roller-coaster/OG-tiles/8-tiles/720p/";
-// const path480 = "360-videos/roller-coaster/OG-tiles/8-tiles/480p/";
-// const path360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
-// const path144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
-
-// const sourceMap = {
-//   0: { high: path480 + "nftl.mp4", mid: path360 + "nftl.mp4", low: path144 + "nftl.mp4" },
-//   1: { high: path480 + "nbtl.mp4", mid: path360 + "nbtl.mp4", low: path144 + "nbtl.mp4" },
-//   2: { high: path480 + "nftr.mp4", mid: path360 + "nftr.mp4", low: path144 + "nftr.mp4" },
-//   3: { high: path480 + "nbtr.mp4", mid: path360 + "nbtr.mp4", low: path144 + "nbtr.mp4" },
-//   4: { high: path480 + "nfbl.mp4", mid: path360 + "nfbl.mp4", low: path144 + "nfbl.mp4" },
-//   5: { high: path480 + "nbbl.mp4", mid: path360 + "nbbl.mp4", low: path144 + "nbbl.mp4" },
-//   6: { high: path480 + "nfbr.mp4", mid: path360 + "nfbr.mp4", low: path144 + "nfbr.mp4" },
-//   7: { high: path480 + "nbbr.mp4", mid: path360 + "nbbr.mp4", low: path144 + "nbbr.mp4" },
-// };
 
 // Create HLS Tiles
 function createHLSTile(index, phiStart, phiLength, thetaStart, thetaLength) {
@@ -113,7 +98,6 @@ function createHLSTile(index, phiStart, phiLength, thetaStart, thetaLength) {
 
 }
 
-
 // HLS tiles
 const tiles = [
   createHLSTile(0, -Math.PI / 2, Math.PI / 2, 0, Math.PI / 2),
@@ -127,13 +111,8 @@ const tiles = [
 ];
 
 
-
 for (let i = 0; i < 8; i++) {
-  
-  // const t = createTile(i, );
   const t = tiles[i];
-  
-  // tiles.push(t);
   scene.add(t.mesh);
 
   // once ready, start the one video
@@ -164,69 +143,36 @@ const quadrantDirections = [
   new THREE.Vector3(1, -1, 1),  // Bottom Back Right
 ].map(v => v.normalize());
 
-// ABR - 3 Calculate which quadrant in the view
-function getCurrentQuadrant() {
-  const camDir = getCameraDirection();
-  let maxDot = -Infinity;
-  let currentIndex = -1;
 
-  quadrantDirections.forEach((quadDir, index) => {
-    const dot = camDir.dot(quadDir); // Cosine of angle between them
-    if (dot > maxDot) {
-      maxDot = dot;
-      currentIndex = index;
-    }
-  });
-
-  return currentIndex; // 0 = quad1, 1 = quad2, ...
-}
 
 // ABR - 4 Dynamically switch quality based on dot product threshold
 // Here we are having two thresholds, then we do the dot product of the camera
 // and tile vector, and based on the dot product if it is greater than
 // the thresholds it get the quality of video ( high, mid or low ).
 
-// // *** new approach with 8 tiles
-// async function swapQualityForAll(desiredQuality) {
-//   // 1) Pause all
-//   tiles.forEach(t => t.video.pause());
-
-//   // 2) Swap src & load
-//   tiles.forEach(t => {
-//     t.video.src = sourceMap[t.index][desiredQuality];
-//     t.video.load();
-//   });
-
-//   // 3) Wait for metadata on all
-//   await Promise.all(tiles.map(t =>
-//     new Promise(res => {
-//       if (t.video.readyState >= 1) return res();
-//       t.video.addEventListener("loadedmetadata", res, { once: true });
-//     })
-//   ));
-
-//   // 4) Seek all to the same globalTime
-//   tiles.forEach(t => { t.video.currentTime = globalTime; });
-
-//   // 5) Wait for each seek to finish
-//   await Promise.all(tiles.map(t =>
-//     new Promise(res => {
-//       t.video.addEventListener("seeked", res, { once: true });
-//     })
-//   ));
-
-//   // 6) Play them all together
-//   tiles.forEach(t => t.video.play().catch(() => { }));
-// }
 
 
+
+function getAngleBetweenDirs(dir1, dir2) {
+  if(!dir1 || !dir2) return 0;
+  // Ensure both directions are normalized
+  const d1 = dir1.clone().normalize();
+  const d2 = dir2.clone().normalize();
+
+  // Compute dot product and clamp it to valid range [-1, 1]
+  const dot = Math.min(Math.max(d1.dot(d2), -1), 1);
+
+  // Convert from radians to degrees
+  const angleRad = Math.acos(dot);
+  const angleDeg = angleRad * (180 / Math.PI);
+
+  return angleDeg;
+}
 
 
 // **** New approach 8 tiles, set interval code
 const thresholdOne = 0.4;
 const thresholdTwo = 0.2;
-
-let lastQuality = null;
 
 let oldDir = null;
 
@@ -234,10 +180,15 @@ let oldDir = null;
 function switchTilesQuality(){
   // setInterval(() => {
     const camDir = getCameraDirection();
-    if (oldDir && oldDir.equals(camDir)) return;
+    // if (oldDir && oldDir.equals(camDir)) return;
+
+    // if(getAngleBetweenDirs(oldDir, camDir) <= 10){
+      // console.log("old cam and new cam are almost same");
+      // return;
+    // }
   
     const now = performance.now();
-    const SWITCH_COOLDOWN = 10; // 5 seconds between switches per tile
+    const SWITCH_COOLDOWN = 5000; // x seconds between switches per tile
   
     const tileScores = tiles.map((t, i) => ({
       tile: t,
@@ -251,8 +202,8 @@ function switchTilesQuality(){
     // Switch tiles quality
     tileScores.forEach(({ tile: t, dot, index }) => {
       let desiredLevel = 1; // default to "low"
-      if (dot >= thresholdOne) desiredLevel = 2;
-      else if (dot >= thresholdTwo) desiredLevel = 1;
+      if (dot >= thresholdOne) desiredLevel = 3;
+      else if (dot >= thresholdTwo) desiredLevel = 2;
   
       // Conditions to allow a level switch
       const canSwitch = (now - t.lastSwitchTime) > SWITCH_COOLDOWN;
@@ -279,38 +230,33 @@ function switchTilesQuality(){
 
 
 // camera check
-let lastStableTime = 0;
-const STABILITY_THRESHOLD_DOT = 0.899; // closer to 1 means very stable
-const STABLE_HOLD_DURATION = 1000; // ms: how long camera must be stable before triggering
+const ANGLE_THRESHOLD_DEGREES = 18;
+const SWITCH_INTERVAL = 1000; // (x/1000) second
+
+let lastCamDir = null;
 
 setInterval(() => {
   const camDir = getCameraDirection().normalize();
-  const now = performance.now();
-
-  // First-time setup
-  if (!oldDir) {
-    oldDir = camDir.clone();
-    lastStableTime = now;
+  if (!lastCamDir) {
+    lastCamDir = camDir.clone();
     return;
   }
 
-  const dot = camDir.dot(oldDir); // cosine similarity of angle
+  const dot = camDir.dot(lastCamDir);
+  const angleRad = Math.acos(Math.min(Math.max(dot, -1), 1)); // clamp for safety
+  const angleDeg = angleRad * (180 / Math.PI);
 
-  if (dot >= STABILITY_THRESHOLD_DOT) {
-    // Camera is stable
-    if ((now - lastStableTime) >= STABLE_HOLD_DURATION) {
-      // Enough time has passed since stable
-      switchTilesQuality(camDir, now);
-    }
+  if (angleDeg <= ANGLE_THRESHOLD_DEGREES) {
+    // camera moved enough → switch quality
+    switchTilesQuality(camDir, performance.now());
+    // lastCamDir.copy(camDir);
+    console.log(`Camera moved ${angleDeg.toFixed(2)}°, switching tile quality`);
   } else {
-    // Camera moved → reset stability timer
-    lastStableTime = now;
+    console.log(`Camera movement ${angleDeg.toFixed(2)}° too small, skipping update`);
+    // lastCamDir.copy(camDir);
   }
-
-  // Always update oldDir
-  oldDir.copy(camDir);
-
-}, 200); // shorter interval, but switch only when stable
+  lastCamDir.copy(camDir);
+}, SWITCH_INTERVAL);
 
 
 
@@ -406,7 +352,7 @@ function updateCameraFromTrace() {
 function animate() {
   requestAnimationFrame(animate);
   updateCameraFromTrace();
-  controls.update();
+  // controls.update();
   renderer.render(scene, camera);
 }
 animate();
