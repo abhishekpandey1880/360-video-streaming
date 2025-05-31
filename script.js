@@ -131,28 +131,28 @@ function animate() {
 animate();
 
 
-
-
-// Bitrate of Bandwidth
-
-function getTotalVideoBandwidth(videoUrl) {
+// Call periodically (e.g., every 5 seconds)
+function getTotalVideoBandwidth2() {
   const entries = performance.getEntriesByType("resource");
-  const videoEntries = entries.filter(e => e.name.includes(videoUrl));
+  // const videoEntries = entries.filter(e =>
+  //   e.name.includes(prefix) && e.initiatorType === "xmlhttprequest"
+  // );
+  const videoEntries = entries.filter(e => e.initiatorType === "xmlhttprequest");
 
-  let totalBytes = 0;
-  videoEntries.forEach(e => {
-    totalBytes += e.transferSize; // includes headers + body
-  });
+  const totalBytes = videoEntries.reduce((acc, e) => acc + e.transferSize, 0);
+  const totalMB = totalBytes / (1024 * 1024);
 
   return {
+    count: videoEntries.length,
     totalBytes,
-    totalMB: (totalBytes / (1024 * 1024)).toFixed(2),
+    totalMB: totalMB.toFixed(2),
   };
 }
 
 // Call periodically (e.g., every 5 seconds)
 setInterval(() => {
-  const usage = getTotalVideoBandwidth("hls/single/"); // update with your stream prefix
-  console.log("Video data downloaded (MB):", usage.totalMB);
+  const usage = getTotalVideoBandwidth2(); // Adjust if prefix differs
+  console.log("Downloaded segments:", usage.count);
+  console.log("Total video data downloaded (MB):", usage.totalMB);
 }, 5000);
 
