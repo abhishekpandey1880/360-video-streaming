@@ -1,5 +1,6 @@
 import { OrbitControls } from "jsm/controls/OrbitControls.js";
 import * as THREE from "three";
+import Hls from "hls.js";
 
 const w = window.innerWidth;
 const h = window.innerHeight;
@@ -12,8 +13,12 @@ const scene = new THREE.Scene();
 
 // Camera setup
 const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
-camera.position.set(0,0,0.01);
+camera.position.set(0, 0, 5);
 // camera.position.z = 5;
+
+
+// Added to generate trace log
+const traceLog = [];
 
 // Renderer setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -33,84 +38,71 @@ controls.rotateSpeed = -1;
 
 const videos = [];
 
-const path720 = "360-videos/roller-coaster/OG-tiles/8-tiles/720p/";
-const path480 = "360-videos/roller-coaster/OG-tiles/8-tiles/480p/";
-const path360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
-const path144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
 
-const sourceMap = {
-  0: { high: path480 + "nftl.mp4", mid: path360 + "nftl.mp4", low: path144 + "nftl.mp4" },
-  1: { high: path480 + "nbtl.mp4", mid: path360 + "nbtl.mp4", low: path144 + "nbtl.mp4" },
-  2: { high: path480 + "nftr.mp4", mid: path360 + "nftr.mp4", low: path144 + "nftr.mp4" },
-  3: { high: path480 + "nbtr.mp4", mid: path360 + "nbtr.mp4", low: path144 + "nbtr.mp4" },
-  4: { high: path480 + "nfbl.mp4", mid: path360 + "nfbl.mp4", low: path144 + "nfbl.mp4" },
-  5: { high: path480 + "nbbl.mp4", mid: path360 + "nbbl.mp4", low: path144 + "nbbl.mp4" },
-  6: { high: path480 + "nfbr.mp4", mid: path360 + "nfbr.mp4", low: path144 + "nfbr.mp4" },
-  7: { high: path480 + "nbbr.mp4", mid: path360 + "nbbr.mp4", low: path144 + "nbbr.mp4" },
-};
+// Create HLS Tiles
+function createHLSTile(index, phiStart, phiLength, thetaStart, thetaLength) {
+  const vid = document.createElement("video");
+  vid.crossOrigin = "anonymous";
+  vid.muted = true;
+  vid.playsInline = true;
+  vid.loop = true;  // Optional
+  videos.push(vid);
 
-function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
-  const highVid = document.createElement("video");
-  const midVid = document.createElement("video");
-  const lowVid = document.createElement("video");
-  [highVid, midVid, lowVid].forEach((v) => {
-    v.crossOrigin = "anonymous";
-    v.loop = true;
-    v.muted = true;
-    v.playbackRate = 1;
-    videos.push(v);
-  });
+  const texture = new THREE.VideoTexture(vid);
+  texture.minFilter = THREE.LinearFilter;
+  texture.magFilter = THREE.LinearFilter;
+  texture.encoding = THREE.sRGBEncoding;
 
-  highVid.src = sourceMap[index].high;
-  midVid.src = sourceMap[index].mid;
-  lowVid.src = sourceMap[index].low;
-
-  const highTexture = new THREE.VideoTexture(highVid);
-  const midTexture = new THREE.VideoTexture(midVid);
-  const lowTexture = new THREE.VideoTexture(lowVid);
-  [highTexture, midTexture, lowTexture].forEach((tex) => {
-    tex.minFilter = THREE.LinearFilter;
-    tex.magFilter = THREE.LinearFilter;
-    tex.encoding = THREE.sRGBEncoding;
-  });
-
-  const videoMaterial = new THREE.MeshBasicMaterial({
-    map: lowTexture,
+  const material = new THREE.MeshBasicMaterial({
+    map: texture,
     side: THREE.BackSide
   });
 
-  const geometry = new THREE.SphereGeometry(20, 64, 64, phiStart, phiLength, thetaStart, thetaLength);
-  const mesh = new THREE.Mesh(geometry, videoMaterial);
+  const geom = new THREE.SphereGeometry(20, 32, 32, phiStart, phiLength, thetaStart, thetaLength);
+  const mesh = new THREE.Mesh(geom, material);
 
-  mesh.userData.textures = {
-    high: highTexture,
-    mid: midTexture,
-    low: lowTexture
-  };
-  mesh.userData.videos = {
-    high: highVid,
-    mid: midVid,
-    low: lowVid
-  };
+  const hls = new Hls({ lowLatencyMode: true });
+  hls.loadSource(`hls/tiles-1s/${index}/master.m3u8`);
+  hls.attachMedia(vid);
 
-  return mesh;
+  hls.on(Hls.Events.LEVEL_SWITCHED, (e, data) => {
+    // console.log(`Tile ${index} is now at level ${data.level}`);
+  });
+
+  // Play video when ready
+  hls.on(Hls.Events.MANIFEST_PARSED, () => {
+    vid.play().catch(() => { });
+  });
+
+  // return { mesh, video: vid, texture, index, hls };
+  return { mesh, video: vid, texture, index, hls, lastSwitchTime: 0 }; // <-- Add lastSwitchTime
+
 }
 
-const quads = [
-  createQuadrant(0, -Math.PI / 2, Math.PI/2, 0, Math.PI / 2), // Front Top Left
-  createQuadrant(1, 0, Math.PI/2, 0, Math.PI / 2), // Back Top Left
-
-  createQuadrant(2, Math.PI, Math.PI/2, 0, Math.PI / 2),  // Front Top Right
-  createQuadrant(3, Math.PI/2, Math.PI/2, 0, Math.PI / 2),  // Back Top Right
-
-  createQuadrant(4, -Math.PI / 2, Math.PI/2, Math.PI/2, Math.PI / 2), // Front Bottom Left
-  createQuadrant(5, 0, Math.PI / 2, Math.PI / 2, Math.PI / 2), // back Bottom Left
-
-  createQuadrant(6, Math.PI, Math.PI/2, Math.PI/2, Math.PI/2),   // Front Bottom Right
-  createQuadrant(7, Math.PI/2, Math.PI/2, Math.PI/2, Math.PI/2)   // Back Bottom Right
+// HLS tiles
+const tiles = [
+  createHLSTile(0, -Math.PI / 2, Math.PI / 2, 0, Math.PI / 2),
+  createHLSTile(1, 0, Math.PI / 2, 0, Math.PI / 2),
+  createHLSTile(2, Math.PI, Math.PI / 2, 0, Math.PI / 2),
+  createHLSTile(3, Math.PI / 2, Math.PI / 2, 0, Math.PI / 2),
+  createHLSTile(4, -Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2),
+  createHLSTile(5, 0, Math.PI / 2, Math.PI / 2, Math.PI / 2),
+  createHLSTile(6, Math.PI, Math.PI / 2, Math.PI / 2, Math.PI / 2),
+  createHLSTile(7, Math.PI / 2, Math.PI / 2, Math.PI / 2, Math.PI / 2)
 ];
 
-quads.forEach((q) => scene.add(q));
+
+for (let i = 0; i < 8; i++) {
+  const t = tiles[i];
+  scene.add(t.mesh);
+
+  // once ready, start the one video
+  t.video.addEventListener("loadeddata", () => {
+    t.video.currentTime = globalTime;
+    t.video.play().catch(() => { });
+  });
+}
+
 
 
 // ABR - 1 Get Camera Direction
@@ -132,7 +124,78 @@ const quadrantDirections = [
   new THREE.Vector3(1, -1, 1),  // Bottom Back Right
 ].map(v => v.normalize());
 
-// ABR - 3 Calculate which quadrant in the view
+
+
+// ABR - 4 Dynamically switch quality based on dot product threshold
+// Here we are having two thresholds, then we do the dot product of the camera
+// and tile vector, and based on the dot product if it is greater than
+// the thresholds it get the quality of video ( high, mid or low ).
+
+
+// **** New approach 8 tiles, set interval code
+const thresholdOne = 0.4;
+const thresholdTwo = 0.2;
+
+let oldDir = null;
+
+// new set interval for quality change using threholds
+function switchTilesQuality(){
+  // setInterval(() => {
+    const camDir = getCameraDirection();
+    // if (oldDir && oldDir.equals(camDir)) return;
+
+    // if(getAngleBetweenDirs(oldDir, camDir) <= 10){
+      // console.log("old cam and new cam are almost same");
+      // return;
+    // }
+  
+    const now = performance.now();
+    const SWITCH_COOLDOWN = 5000; // x seconds between switches per tile
+  
+    const tileScores = tiles.map((t, i) => ({
+      tile: t,
+      dot: camDir.dot(quadrantDirections[i]),
+      index: i
+    }));
+  
+    // Sort tiles by how much they align with the camera
+    tileScores.sort((a, b) => b.dot - a.dot);
+  
+    // Switch tiles quality
+    tileScores.forEach(({ tile: t, dot, index }) => {
+      let desiredLevel = 1; // default to "low"
+      if (dot >= thresholdOne) desiredLevel = 3;
+      else if (dot >= thresholdTwo) desiredLevel = 2;
+  
+      // Conditions to allow a level switch
+      const canSwitch = (now - t.lastSwitchTime) > SWITCH_COOLDOWN;
+  
+      if (
+        t.hls &&
+        t.hls.levels &&
+        desiredLevel < t.hls.levels.length &&
+        canSwitch &&
+        t.hls.nextLevel !== desiredLevel
+      ) {
+        t.hls.nextLevel = desiredLevel; // Smooth switch
+        t.lastSwitchTime = now;
+        console.log(`Tile ${index} queued level ${desiredLevel}`);
+      }
+    });
+  
+    oldDir = camDir.clone();
+  
+  // }, 2000);
+}
+
+
+function updateGlobalTime() {
+  if (!playbackStartTime) return;
+  const elapsed = (performance.now() - playbackStartTime) / 1000; // in seconds
+  globalTime = elapsed;
+}
+
+
 function getCurrentQuadrant() {
   const camDir = getCameraDirection();
   let maxDot = -Infinity;
@@ -146,94 +209,61 @@ function getCurrentQuadrant() {
       currentIndex = index;
     }
   });
-
   return currentIndex; // 0 = quad1, 1 = quad2, ...
 }
 
-// ABR - 4 Dynamically switch quality based on dot product threshold
-// Here we are having two thresholds, then we do the dot product of the camera 
-// and tile vector, and based on the dot product if it is greater than 
-// the thresholds it get the quality of video ( high, mid or low ).
 
-// const DOT_THRESHOLD = 0.35;
-const thresholdOne = 0.5;
-const thresholdTwo = 0.1;
-
-// Added to generate trace log
-const traceLog = [];
-
-function vecToString(v) {
-  return `${v.x.toFixed(4)},${v.y.toFixed(4)},${v.z.toFixed(4)}`;
-}
 
 setInterval(() => {
   // Added for sync videos
   updateGlobalTime();
 
   const camDir = getCameraDirection();
-  
+
   // Added for trace log
   const currentQuadrant = getCurrentQuadrant();
   traceLog.push({
     time: globalTime.toFixed(2),
-    direction: {x: camDir.x, y: camDir.y, z:camDir.z},
+    direction: { x: camDir.x, y: camDir.y, z: camDir.z },
     quadrant: currentQuadrant
   })
+},100);
 
 
-  quads.forEach((q, i) => {
-    const dot = camDir.dot(quadrantDirections[i]);
+// camera check
+const ANGLE_THRESHOLD_DEGREES = 18;
+const SWITCH_INTERVAL = 1000; // (x/1000) second
 
-    let desiredTexture;
-    if (dot >= thresholdOne) {
-      desiredTexture = q.userData.textures.high;
-    } else if (dot >= thresholdTwo) {
-      desiredTexture = q.userData.textures.mid;
-    } else {
-      desiredTexture = q.userData.textures.low;
-    }
+let lastCamDir = null;
 
-    const currentTexture = q.material.map;
+setInterval(() => {
+  const camDir = getCameraDirection().normalize();
+  if (!lastCamDir) {
+    lastCamDir = camDir.clone();
+    return;
+  }
 
-    if (currentTexture !== desiredTexture) {
-      q.material.map = desiredTexture;
-      q.material.needsUpdate = true;
-    }
+  const dot = camDir.dot(lastCamDir);
+  const angleRad = Math.acos(Math.min(Math.max(dot, -1), 1)); // clamp for safety
+  const angleDeg = angleRad * (180 / Math.PI);
 
-
-    // Added for sync videos
-    syncAllVideosTo(globalTime);
-
-  });  
-}, 100);
+  if (angleDeg <= ANGLE_THRESHOLD_DEGREES) {
+    // camera moved enough → switch quality
+    switchTilesQuality(camDir, performance.now());
+    // lastCamDir.copy(camDir);
+    console.log(`Camera moved ${angleDeg.toFixed(2)}°, switching tile quality`);
+  } else {
+    console.log(`Camera movement ${angleDeg.toFixed(2)}° too small, skipping update`);
+    // lastCamDir.copy(camDir);
+  }
+  lastCamDir.copy(camDir);
+}, SWITCH_INTERVAL);
 
 
 
 
 // Preventing video lag on switch, and making all the videos in sync. Added for video sync
 let playbackStartTime = null;
-function updateGlobalTime() {
-  if (!playbackStartTime) return;
-  const elapsed = (performance.now() - playbackStartTime) / 1000; // in seconds
-  globalTime = elapsed;
-}
-
-function syncAllVideosTo(time) {
-  videos.forEach((vid) => {
-    if (Math.abs(vid.currentTime - time) > 0.2) {
-      vid.pause();
-      vid.currentTime = time;
-    }
-  });
-
-  // Play after short delay to let seek settle
-  setTimeout(() => {
-    videos.forEach((vid) => {
-      if (vid.paused) vid.play().catch(() => { });
-    });
-  }, 100);
-}
-
 
 
 // Play all videos once loaded
@@ -259,12 +289,6 @@ videos.forEach((v) => {
   });
 });
 
-function animate() {
-  requestAnimationFrame(animate);
-  renderer.render(scene, camera);
-  controls.update();
-}
-animate();
 
 
 // Added to generate trace route
@@ -288,4 +312,15 @@ window.addEventListener("keydown", (e) => {
     downloadTrace();
   }
 });
+
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+// Added to generate trace route
+
+
 

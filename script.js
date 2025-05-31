@@ -327,7 +327,7 @@ function loadTraceCSV(url) {
     });
 }
 
-loadTraceCSV("./csvs/trace-2.csv");
+loadTraceCSV("./csvs/trace-1.csv");
 
 function updateCameraFromTrace() {
   if (!tracePlaybackStart || traceIndex >= traceData.length) return;
