@@ -356,3 +356,30 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+
+
+// Call periodically (e.g., every 5 seconds)
+function getTotalVideoBandwidth2() {
+  const entries = performance.getEntriesByType("resource");
+  // const videoEntries = entries.filter(e =>
+  //   e.name.includes(prefix) && e.initiatorType === "xmlhttprequest"
+  // );
+  const videoEntries = entries.filter(e => e.name.includes("stream_") && e.initiatorType === "xmlhttprequest");
+
+  const totalBytes = videoEntries.reduce((acc, e) => acc + e.transferSize, 0);
+  const totalMB = totalBytes / (1024 * 1024);
+
+  return {
+    count: videoEntries.length,
+    totalBytes,
+    totalMB: totalMB.toFixed(2),
+  };
+}
+
+// Call periodically (e.g., every 5 seconds)
+setInterval(() => {
+  const usage = getTotalVideoBandwidth2(); // Adjust if prefix differs
+  console.log("Downloaded segments:", usage.count);
+  console.log("Total video data downloaded (MB):", usage.totalMB);
+}, 5000);
+
