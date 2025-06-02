@@ -156,10 +156,11 @@ function getCurrentQuadrant() {
 // the thresholds it get the quality of video ( high, mid or low ).
 
 // const DOT_THRESHOLD = 0.35;
-const thresholdOne = 0.5;
-const thresholdTwo = 0.1;
+const thresholdOne = 0.45;
+const thresholdTwo = 0.25;
 
-setInterval(() => {
+// setInterval(() => {
+function updateQuality(){
   // Added for sync videos
   updateGlobalTime();
 
@@ -189,7 +190,7 @@ setInterval(() => {
     syncAllVideosTo(globalTime);
 
   });  
-}, 200);
+}
 
 
 
@@ -242,6 +243,33 @@ videos.forEach((v) => {
     }
   });
 });
+
+
+let lastCamDir = null;
+
+setInterval(() => {
+  const camDir = getCameraDirection().normalize();
+  if (!lastCamDir) {
+    lastCamDir = camDir.clone();
+    return;
+  }
+
+  const dot = camDir.dot(lastCamDir);
+  const angleRad = Math.acos(Math.min(Math.max(dot, -1), 1)); // clamp for safety
+  const angleDeg = angleRad * (180 / Math.PI);
+
+  if (angleDeg <= 18) {
+    // camera moved enough → switch quality
+    updateQuality(camDir, performance.now());
+    // lastCamDir.copy(camDir);
+    console.log(`Camera moved ${angleDeg.toFixed(2)}°, switching tile quality`);
+  } else {
+    console.log(`Camera movement ${angleDeg.toFixed(2)}° too small, skipping update`);
+    // lastCamDir.copy(camDir);
+  }
+  lastCamDir.copy(camDir);
+}, 1000);
+
 
 function animate() {
   requestAnimationFrame(animate);
