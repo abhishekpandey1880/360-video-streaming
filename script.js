@@ -38,15 +38,21 @@ const path480 = "360-videos/roller-coaster/OG-tiles/8-tiles/480p/";
 const path360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
 const path144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
 
+const path144L = "http://localhost:3000/144p/";
+const path480L = "http://localhost:3000/480p/";
+const path720L = "http://localhost:3000/720p/";
+const path360L = "http://localhost:3000/360p/";
+
+
 const sourceMap = {
-  0: { high: path480 + "nftl.mp4", mid: path360 + "nftl.mp4", low: path144 + "nftl.mp4" },
-  1: { high: path480 + "nbtl.mp4", mid: path360 + "nbtl.mp4", low: path144 + "nbtl.mp4" },
-  2: { high: path480 + "nftr.mp4", mid: path360 + "nftr.mp4", low: path144 + "nftr.mp4" },
-  3: { high: path480 + "nbtr.mp4", mid: path360 + "nbtr.mp4", low: path144 + "nbtr.mp4" },
-  4: { high: path480 + "nfbl.mp4", mid: path360 + "nfbl.mp4", low: path144 + "nfbl.mp4" },
-  5: { high: path480 + "nbbl.mp4", mid: path360 + "nbbl.mp4", low: path144 + "nbbl.mp4" },
-  6: { high: path480 + "nfbr.mp4", mid: path360 + "nfbr.mp4", low: path144 + "nfbr.mp4" },
-  7: { high: path480 + "nbbr.mp4", mid: path360 + "nbbr.mp4", low: path144 + "nbbr.mp4" },
+  0: { high: path480L + "nftl.mp4", mid: path360L + "nftl.mp4", low: path144L + "nftl.mp4" },
+  1: { high: path480L + "nbtl.mp4", mid: path360L + "nbtl.mp4", low: path144L + "nbtl.mp4" },
+  2: { high: path480L + "nftr.mp4", mid: path360L + "nftr.mp4", low: path144L + "nftr.mp4" },
+  3: { high: path480L + "nbtr.mp4", mid: path360L + "nbtr.mp4", low: path144L + "nbtr.mp4" },
+  4: { high: path480L + "nfbl.mp4", mid: path360L + "nfbl.mp4", low: path144L + "nfbl.mp4" },
+  5: { high: path480L + "nbbl.mp4", mid: path360L + "nbbl.mp4", low: path144L + "nbbl.mp4" },
+  6: { high: path480L + "nfbr.mp4", mid: path360L + "nfbr.mp4", low: path144L + "nfbr.mp4" },
+  7: { high: path480L + "nbbr.mp4", mid: path360L + "nbbr.mp4", low: path144L + "nbbr.mp4" },
 };
 
 function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
@@ -262,13 +268,13 @@ setInterval(() => {
     // camera moved enough → switch quality
     updateQuality(camDir, performance.now());
     // lastCamDir.copy(camDir);
-    console.log(`Camera moved ${angleDeg.toFixed(2)}°, switching tile quality`);
+    // console.log(`Camera moved ${angleDeg.toFixed(2)}°, switching tile quality`);
   } else {
-    console.log(`Camera movement ${angleDeg.toFixed(2)}° too small, skipping update`);
+    // console.log(`Camera movement ${angleDeg.toFixed(2)}° too small, skipping update`);
     // lastCamDir.copy(camDir);
   }
   lastCamDir.copy(camDir);
-}, 1000);
+}, 800);
 
 
 function animate() {
