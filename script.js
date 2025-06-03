@@ -15,6 +15,11 @@ const camera = new THREE.PerspectiveCamera(50, w / h, 0.1, 1000);
 camera.position.set(0,0,0.01);
 // camera.position.z = 5;
 
+// Added for trace routes
+let traceData = [];
+let traceIndex = 0;
+let tracePlaybackStart = null;
+
 // Renderer setup
 const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(w, h);
@@ -277,9 +282,49 @@ setInterval(() => {
 }, 800);
 
 
+
+// Added for trace routes ( tracing )
+function loadTraceCSV(url) {
+  fetch(url)
+    .then(res => res.text())
+    .then(data => {
+      const lines = data.trim().split("\n").slice(1); // remove header
+      traceData = lines.map(line => {
+        const [time, x, y, z] = line.split(",").map(Number);
+        return { time, dir: new THREE.Vector3(x, y, z).normalize() };
+      });
+      tracePlaybackStart = performance.now();
+    });
+}
+
+loadTraceCSV("./csvs/trace-2.csv");
+
+function updateCameraFromTrace() {
+  if (!tracePlaybackStart || traceIndex >= traceData.length) return;
+
+  const currentTime = (performance.now() - tracePlaybackStart) / 1000;
+
+  while (
+    traceIndex + 1 < traceData.length &&
+    traceData[traceIndex + 1].time <= currentTime
+  ) {
+    traceIndex++;
+  }
+
+  const lookDir = traceData[traceIndex]?.dir;
+  if (lookDir) {
+    const target = new THREE.Vector3().copy(camera.position).add(lookDir);
+    camera.lookAt(target);
+    camera.updateMatrixWorld(); // Added during trace, to update the vector
+  }
+}
+
+
+
 function animate() {
   requestAnimationFrame(animate);
+  updateCameraFromTrace();
+  // controls.update();
   renderer.render(scene, camera);
-  controls.update();
 }
 animate();
