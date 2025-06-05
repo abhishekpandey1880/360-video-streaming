@@ -26,6 +26,10 @@ renderer.setSize(w, h);
 // renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.appendChild(renderer.domElement);
 
+
+// Log generation for PSNR 
+const qualityLog = {};  // tileIndex → array of { start, quality }
+
 // Controls
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.target.set(0, 0, -5);  // Point the camera to look forward
@@ -43,22 +47,39 @@ const path480 = "360-videos/roller-coaster/OG-tiles/8-tiles/480p/";
 const path360 = "360-videos/roller-coaster/OG-tiles/8-tiles/360p/";
 const path144 = "360-videos/roller-coaster/OG-tiles/8-tiles/144p/";
 
-const path144L = "http://localhost:3000/144p/";
-const path480L = "http://localhost:3000/480p/";
-const path720L = "http://localhost:3000/720p/";
-const path360L = "http://localhost:3000/360p/";
+// const path144L = "http://localhost:3000/144p/";
+// const path480L = "http://localhost:3000/480p/";
+// const path720L = "http://localhost:3000/720p/";
+// const path360L = "http://localhost:3000/360p/";
 
+const path144L = "http://localhost:3000/low/";
+const path480L = "http://localhost:3000/hd/";
+const path720L = "http://localhost:3000/full-hd/";
+const path360L = "http://localhost:3000/medium/";
+
+
+// const sourceMap = {
+//   0: { high: path480L + "nftl.mp4", mid: path360L + "nftl.mp4", low: path144L + "nftl.mp4" },
+//   1: { high: path480L + "nbtl.mp4", mid: path360L + "nbtl.mp4", low: path144L + "nbtl.mp4" },
+//   2: { high: path480L + "nftr.mp4", mid: path360L + "nftr.mp4", low: path144L + "nftr.mp4" },
+//   3: { high: path480L + "nbtr.mp4", mid: path360L + "nbtr.mp4", low: path144L + "nbtr.mp4" },
+//   4: { high: path480L + "nfbl.mp4", mid: path360L + "nfbl.mp4", low: path144L + "nfbl.mp4" },
+//   5: { high: path480L + "nbbl.mp4", mid: path360L + "nbbl.mp4", low: path144L + "nbbl.mp4" },
+//   6: { high: path480L + "nfbr.mp4", mid: path360L + "nfbr.mp4", low: path144L + "nfbr.mp4" },
+//   7: { high: path480L + "nbbr.mp4", mid: path360L + "nbbr.mp4", low: path144L + "nbbr.mp4" },
+// };
 
 const sourceMap = {
-  0: { high: path480L + "nftl.mp4", mid: path360L + "nftl.mp4", low: path144L + "nftl.mp4" },
-  1: { high: path480L + "nbtl.mp4", mid: path360L + "nbtl.mp4", low: path144L + "nbtl.mp4" },
-  2: { high: path480L + "nftr.mp4", mid: path360L + "nftr.mp4", low: path144L + "nftr.mp4" },
-  3: { high: path480L + "nbtr.mp4", mid: path360L + "nbtr.mp4", low: path144L + "nbtr.mp4" },
-  4: { high: path480L + "nfbl.mp4", mid: path360L + "nfbl.mp4", low: path144L + "nfbl.mp4" },
-  5: { high: path480L + "nbbl.mp4", mid: path360L + "nbbl.mp4", low: path144L + "nbbl.mp4" },
-  6: { high: path480L + "nfbr.mp4", mid: path360L + "nfbr.mp4", low: path144L + "nfbr.mp4" },
-  7: { high: path480L + "nbbr.mp4", mid: path360L + "nbbr.mp4", low: path144L + "nbbr.mp4" },
+  0: { high: path720L + "1.mp4", mid: path480L + "1.mp4", low: path360L + "1.mp4" },
+  1: { high: path720L + "2.mp4", mid: path480L + "2.mp4", low: path360L + "2.mp4" },
+  2: { high: path720L + "0.mp4", mid: path480L + "0.mp4", low: path360L + "0.mp4" },
+  3: { high: path720L + "3.mp4", mid: path480L + "3.mp4", low: path360L + "3.mp4" },
+  4: { high: path720L + "5.mp4", mid: path480L + "5.mp4", low: path360L + "5.mp4" },
+  5: { high: path720L + "6.mp4", mid: path480L + "6.mp4", low: path360L + "6.mp4" },
+  6: { high: path720L + "4.mp4", mid: path480L + "4.mp4", low: path360L + "4.mp4" },
+  7: { high: path720L + "7.mp4", mid: path480L + "7.mp4", low: path360L + "7.mp4" },
 };
+
 
 function createQuadrant(index, phiStart, phiLength, thetaStart, thetaLength) {
   const highVid = document.createElement("video");
@@ -167,8 +188,8 @@ function getCurrentQuadrant() {
 // the thresholds it get the quality of video ( high, mid or low ).
 
 // const DOT_THRESHOLD = 0.35;
-const thresholdOne = 0.45;
-const thresholdTwo = 0.25;
+const thresholdOne = 0.2;
+const thresholdTwo = 0.0;
 
 // setInterval(() => {
 function updateQuality(){
@@ -186,7 +207,7 @@ function updateQuality(){
     } else if (dot >= thresholdTwo) {
       desiredTexture = q.userData.textures.mid;
     } else {
-      desiredTexture = q.userData.textures.low;
+      desiredTexture = q.userData.textures.mid;
     }
 
     const currentTexture = q.material.map;
@@ -194,6 +215,19 @@ function updateQuality(){
     if (currentTexture !== desiredTexture) {
       q.material.map = desiredTexture;
       q.material.needsUpdate = true;
+    }
+
+    // PSNR 
+    const now = globalTime.toFixed(2);
+    const quality = (dot >= thresholdOne) ? "high" : (dot >= thresholdTwo ? "mid" : "low");
+
+    if (!qualityLog[i]) {
+      qualityLog[i] = [];
+    }
+
+    const last = qualityLog[i][qualityLog[i].length - 1];
+    if (!last || last.quality !== quality) {
+      qualityLog[i].push({ start: parseFloat(now), quality });
     }
 
 
@@ -297,7 +331,7 @@ function loadTraceCSV(url) {
     });
 }
 
-loadTraceCSV("./csvs/trace-2.csv");
+loadTraceCSV("./csvs/rhino_user_3.csv");
 
 function updateCameraFromTrace() {
   if (!tracePlaybackStart || traceIndex >= traceData.length) return;
@@ -328,3 +362,34 @@ function animate() {
   renderer.render(scene, camera);
 }
 animate();
+
+
+
+window.addEventListener("keydown", (e) => {
+  if (e.key.toLowerCase() === "l") {
+    const mergedLog = [];
+
+    for (const tileIndex in qualityLog) {
+      const entries = qualityLog[tileIndex];
+      for (let j = 0; j < entries.length; j++) {
+        const current = entries[j];
+        const next = entries[j + 1];
+        const duration = next ? (next.start - current.start) : (globalTime - current.start);
+        mergedLog.push({
+          time: current.start,
+          tileIndex: parseInt(tileIndex),
+          quality: current.quality,
+          duration: parseFloat(duration.toFixed(2))
+        });
+      }
+    }
+
+    const blob = new Blob([JSON.stringify(mergedLog, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "quality_log.json";
+    a.click();
+    console.log("📥 Log file downloaded");
+  }
+});
+

@@ -1,0 +1,314 @@
+[
+  {
+    "time": 1.12,
+    "tileIndex": 0,
+    "quality": "high",
+    "duration": 10.4
+  },
+  {
+    "time": 11.52,
+    "tileIndex": 0,
+    "quality": "mid",
+    "duration": 0.8
+  },
+  {
+    "time": 12.32,
+    "tileIndex": 0,
+    "quality": "high",
+    "duration": 13.6
+  },
+  {
+    "time": 25.92,
+    "tileIndex": 0,
+    "quality": "mid",
+    "duration": 1.61
+  },
+  {
+    "time": 27.53,
+    "tileIndex": 0,
+    "quality": "low",
+    "duration": 11.18
+  },
+  {
+    "time": 38.71,
+    "tileIndex": 0,
+    "quality": "high",
+    "duration": 6.41
+  },
+  {
+    "time": 45.12,
+    "tileIndex": 0,
+    "quality": "mid",
+    "duration": 3.2
+  },
+  {
+    "time": 48.32,
+    "tileIndex": 0,
+    "quality": "high",
+    "duration": 12
+  },
+  {
+    "time": 1.12,
+    "tileIndex": 1,
+    "quality": "low",
+    "duration": 30.4
+  },
+  {
+    "time": 31.52,
+    "tileIndex": 1,
+    "quality": "high",
+    "duration": 4
+  },
+  {
+    "time": 35.52,
+    "tileIndex": 1,
+    "quality": "low",
+    "duration": 9.6
+  },
+  {
+    "time": 45.12,
+    "tileIndex": 1,
+    "quality": "high",
+    "duration": 3.2
+  },
+  {
+    "time": 48.32,
+    "tileIndex": 1,
+    "quality": "low",
+    "duration": 12
+  },
+  {
+    "time": 1.12,
+    "tileIndex": 2,
+    "quality": "high",
+    "duration": 23.2
+  },
+  {
+    "time": 24.32,
+    "tileIndex": 2,
+    "quality": "mid",
+    "duration": 0.8
+  },
+  {
+    "time": 25.12,
+    "tileIndex": 2,
+    "quality": "high",
+    "duration": 6.4
+  },
+  {
+    "time": 31.52,
+    "tileIndex": 2,
+    "quality": "low",
+    "duration": 4
+  },
+  {
+    "time": 35.52,
+    "tileIndex": 2,
+    "quality": "high",
+    "duration": 9.6
+  },
+  {
+    "time": 45.12,
+    "tileIndex": 2,
+    "quality": "low",
+    "duration": 3.2
+  },
+  {
+    "time": 48.32,
+    "tileIndex": 2,
+    "quality": "high",
+    "duration": 12
+  },
+  {
+    "time": 1.12,
+    "tileIndex": 3,
+    "quality": "low",
+    "duration": 26.41
+  },
+  {
+    "time": 27.53,
+    "tileIndex": 3,
+    "quality": "mid",
+    "duration": 1.59
+  },
+  {
+    "time": 29.12,
+    "tileIndex": 3,
+    "quality": "high",
+    "duration": 6.4
+  },
+  {
+    "time": 35.52,
+    "tileIndex": 3,
+    "quality": "mid",
+    "duration": 3.19
+  },
+  {
+    "time": 38.71,
+    "tileIndex": 3,
+    "quality": "low",
+    "duration": 2.41
+  },
+  {
+    "time": 41.12,
+    "tileIndex": 3,
+    "quality": "mid",
+    "duration": 4
+  },
+  {
+    "time": 45.12,
+    "tileIndex": 3,
+    "quality": "low",
+    "duration": 15.2
+  },
+  {
+    "time": 1.12,
+    "tileIndex": 4,
+    "quality": "high",
+    "duration": 9.6
+  },
+  {
+    "time": 10.72,
+    "tileIndex": 4,
+    "quality": "mid",
+    "duration": 0.8
+  },
+  {
+    "time": 11.52,
+    "tileIndex": 4,
+    "quality": "high",
+    "duration": 14.4
+  },
+  {
+    "time": 25.92,
+    "tileIndex": 4,
+    "quality": "mid",
+    "duration": 1.61
+  },
+  {
+    "time": 27.53,
+    "tileIndex": 4,
+    "quality": "low",
+    "duration": 11.18
+  },
+  {
+    "time": 38.71,
+    "tileIndex": 4,
+    "quality": "high",
+    "duration": 2.41
+  },
+  {
+    "time": 41.12,
+    "tileIndex": 4,
+    "quality": "low",
+    "duration": 4
+  },
+  {
+    "time": 45.12,
+    "tileIndex": 4,
+    "quality": "mid",
+    "duration": 3.2
+  },
+  {
+    "time": 48.32,
+    "tileIndex": 4,
+    "quality": "low",
+    "duration": 12
+  },
+  {
+    "time": 1.12,
+    "tileIndex": 5,
+    "quality": "low",
+    "duration": 30.4
+  },
+  {
+    "time": 31.52,
+    "tileIndex": 5,
+    "quality": "mid",
+    "duration": 4
+  },
+  {
+    "time": 35.52,
+    "tileIndex": 5,
+    "quality": "low",
+    "duration": 9.6
+  },
+  {
+    "time": 45.12,
+    "tileIndex": 5,
+    "quality": "high",
+    "duration": 3.2
+  },
+  {
+    "time": 48.32,
+    "tileIndex": 5,
+    "quality": "low",
+    "duration": 12
+  },
+  {
+    "time": 1.12,
+    "tileIndex": 6,
+    "quality": "high",
+    "duration": 23.2
+  },
+  {
+    "time": 24.32,
+    "tileIndex": 6,
+    "quality": "mid",
+    "duration": 0.8
+  },
+  {
+    "time": 25.12,
+    "tileIndex": 6,
+    "quality": "high",
+    "duration": 6.4
+  },
+  {
+    "time": 31.52,
+    "tileIndex": 6,
+    "quality": "low",
+    "duration": 4
+  },
+  {
+    "time": 35.52,
+    "tileIndex": 6,
+    "quality": "high",
+    "duration": 3.19
+  },
+  {
+    "time": 38.71,
+    "tileIndex": 6,
+    "quality": "mid",
+    "duration": 2.41
+  },
+  {
+    "time": 41.12,
+    "tileIndex": 6,
+    "quality": "low",
+    "duration": 19.2
+  },
+  {
+    "time": 1.12,
+    "tileIndex": 7,
+    "quality": "low",
+    "duration": 28
+  },
+  {
+    "time": 29.12,
+    "tileIndex": 7,
+    "quality": "high",
+    "duration": 2.4
+  },
+  {
+    "time": 31.52,
+    "tileIndex": 7,
+    "quality": "mid",
+    "duration": 4
+  },
+  {
+    "time": 35.52,
+    "tileIndex": 7,
+    "quality": "low",
+    "duration": 24.8
+  }
+]
